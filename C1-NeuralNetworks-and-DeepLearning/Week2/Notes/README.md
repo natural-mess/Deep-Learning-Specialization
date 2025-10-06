@@ -243,5 +243,191 @@ _But if you see this partial derivative symbol, all it means is you're measuring
 
 
 ## Derivatives
+### Intuition about derivatives
+Given function $f(a)=3a$, take
+* a = 2     -> f(a) = 6
+* a = 2.001 -> f(a) = 6.003
+
+Derivative of f(a) is slope of f(a), which is $rise \over run$ or $height \over width$, at a=2 is 3.
+
+* a = 5     -> f(a) = 15
+* a = 5.001 -> f(a) = 15.003
+
+Slope at a=5 is also 3. We say, $df(a) \over da$ and this just means, the slope of the function `f(a)` when you nudge the variable `a`, a tiny little amount, this is equal to 3.
+
+So ${df(a) \over da} = 3$
+
+![alt text](_assets/derivativeIntuition.png)
+
+_Derivatives are defined with an even smaller value of how much you nudge a to the right. So, it's not 0.001. It's not 0.000001. It's not 0.00000000 and so on 1. It's even smaller than that, and the formal definition of derivative says, **whenever you nudge a to the right by an infinitesimal amount, basically an infinitely tiny, tiny amount. If you do that, this f(a) go up 3 times as much as whatever was the tiny, tiny, tiny amount that you nudged a to the right**._
+
+_So, that's actually the formal definition of a derivative. But for the purposes of our intuitive understanding, which I'll talk about nudging a to the right by this small amount 0.001. Even if it's 0.001 isn't exactly tiny, tiny infinitesimal._
+
+_Now, one property of the derivative is that, no matter where you take the slope of this function, it is equal to 3, whether `a` is equal to 2 or `a` is equal to 5._
+
+_The slope of this function is equal to three, meaning that whatever is the value of `a`, if you increase it by 0.001, the value of f(a) goes up by 3 times as much. So, this function has a safe slope everywhere. One way to see that is that, wherever you draw this little triangle. The height, divided by the width, always has a ratio of 3 to 1._
+
+## More Derivative Examples
+Given function $f(a)=a^2$, take
+* a = 2     -> f(a) = 4
+* a = 2.001 -> f(a) = 4.004
+
+But if we now nudge `a` to 2.001 then f(a) becomes roughly 4.004. So if we draw this little triangle again, what this means is that if we nudge `a` to the right by 0.001, f(a) goes up 4 times as much by 0.004. 
+
+So in the language of calculus, we say that a slope that is the derivative of f(a) at a=2 is 4.
+
+Or to write this out of our calculus notation, we say that ${d \over da} f(a) = 4$ when a=2.
+
+* a = 5     -> f(a) = 25
+* a = 5.001 -> f(a) = 25.010
+
+-> ${d \over da} f(a) = 10$ when a=5
+
+So one way to see why did derivatives is different at different points is that if you draw that little triangle right at different locations on this, you'll see that the ratio of the height of the triangle over the width of the triangle is very different at different points on the curve. 
+
+${d \over da} f(a) = {d \over da} a^2 = 2a$
+
+If you ever pull up a calculus textbook and you see this formula, that the derivative of a²=2a, all that means is that for any given value of a, if you nudge upward by 0.001 already your tiny little value, you will expect f(a) to go up by 2a. That is the slope or the derivative times other much you had nudged to the right the value of a.
+
+![alt text](_assets/devExp.png)
+
+![alt text](_assets/devExp2.png)
+
+## Computation Graph
+The computations of a neural network are organized in terms of a forward pass or a forward propagation step, in which we compute the output of the neural network, followed by a backward pass or back propagation step, which we use to compute gradients or compute derivatives.
+
+Given function J(a,b,c) = 3(a+bv)
+
+Let u=bc, v=a+u -> J = 3v
+
+The computation graph comes in handy when there is some distinguished or some special output variable, such as J in this case, that you want to optimize. And in the case of a logistic regression, J is of course the cost function that we're trying to minimize. And what we're seeing in this little example is that, through a left-to-right pass, you can compute the value of J and what we'll see in the next couple of slides is that in order to compute derivatives there'll be a right-to-left pass like this, kind of going in the opposite direction as the blue arrows. That would be most natural for computing the derivatives.
+
+![alt text](_assets/compGraph.png)
+
+![alt text](_assets/Q4.png)
+
+## Derivatives with a Computation Graph
+![alt text](_assets/compGraph.png)
+
+Let's say we want to comput $dJ \over dv$
+
+J=3v
+* v=11 -> 11.001
+* J=33 -> 33.003
+
+The change in J (which is 0.003) divided by the change in v (which is 0.001) gives us the derivative, or dv, which tells us how sensitive J is to changes in v. Since the increase in J is three times the increase in v, we find that dv = 3. 
+
+-> ${dJ \over dv} = 3$
+
+From previous example: f(a)=3a
+
+${df(a) \over da} = {df \over da} = 3$
+
+Terminology of backpropagation, what we're seeing is that if you want to compute the derivative of this final output variable, which usually is a variable you care most about, with respect to v, then we've done one step of backpropagation. So we call it one step backwards in this graph.
+
+![alt text](_assets/backprop1.png)
+
+$dJ \over da$
+* a=5 -> 5.001
+* v=11 -> 11.001
+* J=33 -> 33.003
+
+And by increase a, you have to take this value of 5 and just plug in a new value. Then the change to a will propagate to the right of the computation graph so that J ends up being 33.003. And so the increase to J is 3 times the increase to a. So that means this derivative is equal to 3. 
+
+-> ${dJ \over dv} = 3$
+
+If you change a, then that will change v. And through changing v, that would change J. And so the net change to the value of J when you bump up the value, when you nudge the value of a up a little bit, is that. First, by changing a, you end up increasing v. Well, how much does v increase? It is increased by an amount that's determined by dv/da. And then the change in v will cause the value of J to also increase. So in calculus, this is actually called the chain rule that if a affects v, affects J, then the amounts that J changes when you nudge a is the product of how much v changes when you nudge a times how much J changes when you nudge v. So in calculus, again, this is called the chain rule.
+
+-> ${dJ \over dv} = 3 = {dJ \over dv}*{dv \over da}$
+
+We saw from this calculation is that if you increase a by 0.001, v changes by the same amount. So dv/da = 1. 
+
+${dJ \over dv}*{dv \over da}=3$
+
+![alt text](_assets/backprop2.png)
+
+Compute ${dJ \over du}$
+* u=6 -> 6.001
+* v=11 -> 11.001
+* J=33 -> 33.003
+${dJ \over du} = 3 = {dJ \over dv} * {dv \over du} = 3*1$
+
+Compute ${dJ \over db}$
+
+${dJ \over db} = {dJ \over du} * {du \over db}$
+* b=3 -> 3.001
+* u=6 -> 6.002
+* J goes up by 0.006 (33.006)
+${dJ \over db} = {dJ \over du} * {du \over db} = 3*2=6$
+
+${dJ \over dc} = {dJ \over du} * {du \over dc}= 3*3 = 9$
+
+![alt text](_assets/compGraph3.png)
+
+![alt text](_assets/Q5.png)
+
+## Logistic Regression Gradient Descent
+Logistic Regression recap
+
+$z = w^T*x+b$
+
+$\hat{y}=a=\sigma(z)$
+
+$\ell(a,y) = -(ylog(a) + (1-y)log(1-a))$
+
+We have 2 features: x1 and x2
+
+![alt text](_assets/LRGradientDescent.png)
+
+![alt text](_assets/LRGradientDescent1.png)
+
+![alt text](_assets/LRGradientDescent2.png)
+
+![alt text](_assets/Q6.png)
+
+## Gradient Descent on m Examples
+$J(w, b) =  {1 \over m} \Sigma_{i=1}^m \ell(a^{(i)}, y^{(i)})$ 
+
+Where
+
+$a^{(i)} = \hat{y}^{(i)} = \sigma(z^{(i)}) = \sigma(w^Tx^{(i)}+b)$
+
+${d \over dw_1}J(w, b) = {1 \over m} \Sigma_{i=1}^m {d \over dw_1}\ell(a^{(i)}, y^{(i)})$
+
+In previous lesson, we learned how to compute
+
+${dw_1}^{(i)} = {d \over dw_1}\ell(x^{(i)}, y^{(i)})$
+
+Let J=0, $dw_1=0$, $dw_2=0$, db=0
+
+
+For i=1 to m:\
+    $z^{(i)} = w^Tx^{(i)} + b$ \
+    $a^{(i)} = \sigma(z^{(i)})$ \
+    $J += y^{(i)}loga^{(i)} + (1-y^{(i)})log(1-a^{(i)})$ \
+    $dz^{(i)} = a^{(i)} - y^{(i)}$ \
+    $dw_1 += x_1^{(i)}dz^{(i)}$ \
+    $dw_2 += x_2^{(i)}dz^{(i)}$ \
+    $db += dz^{(i)}$ \
+endfor
+
+J /= m \
+$dw_1 /= m$ \
+$dw_2 /= m$ \
+$db /= m$
+
+![alt text](_assets/LRGradientDescent3.png)
+
+In the deep learning era, we would move to a bigger and bigger datasets, and so being able to implement your algorithms without using explicit for loops is really important and will help you to scale to much bigger datasets. 
+
+-> Vectorization
+
+![alt text](_assets/LRGradientDescent4.png)
+
+![alt text](_assets/Q7.png)
+
+## Vectorization
+
+
 
 
