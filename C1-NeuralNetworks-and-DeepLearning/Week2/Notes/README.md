@@ -11,6 +11,34 @@ Set up a machine learning problem with a neural network mindset and use vectoriz
 - Implement vectorization across multiple training examples
 - Explain the concept of broadcasting
 
+- [Neural Networks Basics](#neural-networks-basics)
+  - [Binary Classification](#binary-classification)
+    - [Notation](#notation)
+  - [Logistic Regression](#logistic-regression)
+  - [Logistic Regression Cost Function](#logistic-regression-cost-function)
+  - [Gradient Descent](#gradient-descent)
+  - [Derivatives](#derivatives)
+    - [Intuition about derivatives](#intuition-about-derivatives)
+  - [More Derivative Examples](#more-derivative-examples)
+  - [Computation Graph](#computation-graph)
+  - [Derivatives with a Computation Graph](#derivatives-with-a-computation-graph)
+  - [Logistic Regression Gradient Descent](#logistic-regression-gradient-descent)
+  - [Gradient Descent on m Examples](#gradient-descent-on-m-examples)
+  - [Vectorization](#vectorization)
+  - [More Vectorization Examples](#more-vectorization-examples)
+  - [Vectorizing Logistic Regression](#vectorizing-logistic-regression)
+  - [Vectorizing Logistic Regression's Gradient Output](#vectorizing-logistic-regressions-gradient-output)
+    - [Forward Propagation (Making Predictions)](#forward-propagation-making-predictions)
+    - [Backward Propagation (Learning / Updating Weights)](#backward-propagation-learning--updating-weights)
+    - [Summary Table](#summary-table)
+    - [Intuition](#intuition)
+  - [Broadcasting in Python](#broadcasting-in-python)
+    - [General Principle](#general-principle)
+  - [A Note on Python/Numpy Vectors](#a-note-on-pythonnumpy-vectors)
+  - [Explanation of Logistic Regression Cost Function (Optional)](#explanation-of-logistic-regression-cost-function-optional)
+    - [Cost on m examples](#cost-on-m-examples)
+
+
 ## Binary Classification
 Logistic regression is an algorithm for binary classification.
 
@@ -427,7 +455,499 @@ In the deep learning era, we would move to a bigger and bigger datasets, and so 
 ![alt text](_assets/Q7.png)
 
 ## Vectorization
+In logistic regression, we need to compute $z = w^T*x+b$ where w and x are column vectors. $x, w \in {\mathbb{R}}^{n_x}$
 
+Vectorieze:
+```python
+z = np.dot(w,x)+b
+```
 
+Example:
 
+```python
+import numpy as np
+
+a = np.array([1, 2, 3, 4])
+print(a)
+# [1 2 3 4]
+
+import time
+a = np.random.rand(1000000)
+b = np.random.rand(1000000)
+
+tic = time.time()
+c = np.dot(a,b)
+toc = time.time()
+
+print(c)
+print("Vectorized version: " + str(1000*(toc-tic)) +"ms")
+
+c = 0
+tic = time.time()
+for i in range(1000000):
+    c += a[i]*b[i]
+toc = time.time()
+
+print(c)
+print("For loop: " + str(1000*(toc-tic)) + "ms")
+```
+
+In both cases, value of `c` is the same. But the execution time of nonvectorized version takes ~400 times longer than vectorized version.
+
+Both GPU and CPU have parallelization instructions. They're sometimes called SIMD instructions. This stands for a single instruction multiple data. But what this basically means is that, if you use built-in functions such as this np.function or other functions that don't require you explicitly implementing a for loop. It enables Python Numpy to take much better advantage of parallelism to do your computations much faster. And this is true both computations on CPUs and computations on GPUs. It's just that GPUs are remarkably good at these SIMD calculations but CPU is actually also not too bad at that. Maybe just not as good as GPUs. 
+
+**The rule of thumb to remember is whenever possible, avoid using explicit for loops.**
+
+![alt text](_assets/vectorize.png)
+
+## More Vectorization Examples
+
+**Whenever possiblem avoid explicit for-loop**
+
+We have matrix A, vector u and vector v: u = Av
+
+![alt text](_assets/vectorizeExp.png)
+
+Say you need to apply the exponential operation on every element of a matrix/vector.
+
+![alt text](_assets/vectorizeExp2.png)
+
+Logistic regression derivatives
+
+![alt text](_assets/LRDerivativeCode.png)
+
+## Vectorizing Logistic Regression
+Vectorize the implementation of logistic regression, so they can process an entire training set, that is implement a single elevation of grading descent with respect to an entire training set without using even a single explicit for loop.
+
+Forward propagation
+
+If you have m training examples, then to make a prediction on 1st example, we need to compute:
+
+$z^{(1)} = w^T*x^{(1)}+b$
+
+$a^{(1)} = \sigma(z^{(1)})$
+
+Prediction on 2nd example, we need to compute:
+
+$z^{(2)} = w^T*x^{(2)}+b$
+
+$a^{(2)} = \sigma(z^{(2)})$
+
+Prediction on 3rd example, we need to compute:
+
+$z^{(3)} = w^T*x^{(3)}+b$
+
+$a^{(3)} = \sigma(z^{(3)})$
+
+So on, we need to do this m times for m training examples.
+
+We define matrix X $(n_X, m)$ as follow:
+
+![alt text](_assets/matrixX.png)
+
+We construct a (1xm) matrix, which is a row vector.
+
+$[z^{(1)}, z^{(2)} ... z^{(m)}] = w^T*X + [b b ... b]$
+
+in which [b b ... b] is (1xm) vector, $w^T$ is a row vector.
+
+We have
+
+$[z^{(1)}, z^{(2)} ... z^{(m)}] = [w^T*x^{(1)}+b w^T*x^{(2)}+b ... w^T*x^{(m)}+b]$
+
+which is another (1xm) vector. In which, 1st element is $z^{(1)}$, 2nd element is $z^{(2)}$ and so on.
+
+Define 
+
+$Z = [z^{(1)}, z^{(2)} ... z^{(m)}]$
+
+Numpy command for this is
+
+```python
+Z = np.dot(w.T, X) + b
+```
+
+In this command, b is a real number of (1x1) matrix, but when you add np.dot(w.T, X) to this real number, Python automatically takes this real number b and expand it out to (1xm) row vector. This is called broadcasting in Python.
+
+$A = [a^{(1)} a^{(2)} ... a^{(m)}] = \sigma(Z)$
+
+![alt text](_assets/LRVectorize.png)
+
+## Vectorizing Logistic Regression's Gradient Output
+Use vectorization to also perform the gradient computations for all m training samples at the same time.
+
+For gradient computation, we compute:
+
+$dz^{(1)} = a^{(1)} - y^{(1)}$
+
+$dz^{(2)} = a^{(2)} - y^{(2)}$
+
+so on... for all m training examples.
+
+We stack all dz variables horizontally, this is (1xm) matrix or 1 dimensional row vector.
+
+$dZ = [dz^{(1)} dz^{(2)} ... dz^{(m)}]$
+
+From previous lesson, we already figured out how to compute A
+
+$A = [a^{(1)} a^{(2)} ... a^{(m)}]$
+
+We defined
+
+$Y = [y^{(1)} y^{(2)} ... y^{(m)}]$
+
+So
+
+$dZ = A - Y = [a^{(1)}-y^{(1)} a^{(2)}-y^{(2)} ... a^{(m)}-y^{(m)}]$
+
+For loop approach for w:
+
+dw = 0 \
+$dw += X^{(1)}dz^{(1)}$ \
+$dw += X^{(2)}dz^{(2)}$ \
+...
+dw /= m
+
+For b
+
+db = 0 \
+$db += dz^{(1)}$ \
+$db += dz^{(2)}$ \
+...
+$db += dz^{(m)}$ \
+db /= m
+
+$db = {1 \over m} \Sigma_{i=1}^m dz^{(1)}$
+
+```python
+db = 1/m * np.sum(dZ)
+```
+
+$dw = {1 \over m} X*dz^T$
+
+![alt text](_assets/dw.png)
+
+Implement Logistic Regression
+
+```python
+for i in range(1000):
+    Z = np.dot(w.T,X) + b
+    A = sigmoid(Z)
+    dZ = A - Y
+    dw = 1/m*X*dZ.T
+    db = 1/m*np.sum(dz)
+
+    w=w-alpha*dw
+    b=b-alpha*db
+```
+![alt text](_assets/ImplementLR.png)
+
+![alt text](_assets/Q8.png)
+
+### Forward Propagation (Making Predictions)
+
+Data flows **left ➜ right**.
+```lua
+  Input features (X)
+          │
+          ▼
+  ┌───────────────────┐
+  │ Linear function   │
+  │ Z = WᵀX + b       │
+  └───────────────────┘
+          │
+          ▼
+  ┌───────────────────────────┐
+  │ Activation (Sigmoid)      │
+  │ A = σ(Z) = 1 / (1+e^(-Z)) │
+  └───────────────────────────┘
+          │
+          ▼
+  ┌──────────────────────────────────────────┐
+  │ Loss function                            │
+  │ J = -(1/m) Σ [Y log(A) + (1−Y) log(1−A)] │
+  └──────────────────────────────────────────┘
+          │
+          ▼
+  (Output: Cost J)
+```
+
+### Backward Propagation (Learning / Updating Weights)
+
+Gradients flow **right ➜ left**.
+```
+(Output layer error)
+▲
+│
+│ dZ = A − Y (how wrong each prediction is)
+│
+┌───────────────────┐
+│ Compute gradients │
+│ dW = (1/m) X dZᵀ  │
+│ db = (1/m) Σ dZ   │
+└───────────────────┘
+▲
+│
+│ Update parameters
+│ W := W − α dW
+│ b := b − α db
+│
+└──────────────────────────────
+(new W, b)
+```
+### Summary Table
+
+| Symbol | Meaning | Formula |
+|--------|----------|----------|
+| Z | Linear combination | Z = WᵀX + b |
+| A | Activation (sigmoid output) | A = σ(Z) |
+| J | Cost function | J = −(1/m) Σ [Y log(A) + (1−Y) log(1−A)] |
+| dZ | Gradient w.r.t. Z | dZ = A − Y |
+| dW | Gradient w.r.t. weights | dW = (1/m) X dZᵀ |
+| db | Gradient w.r.t. bias | db = (1/m) Σ dZ |
+| α | Learning rate | Controls step size in gradient descent |
+
+| Symbol | Meaning | Description |
+|--------|----------|-------------|
+| **dZ** | Gradient of loss w.r.t. Z | Measures how wrong the prediction is (`A - Y`) |
+| **dW** | Gradient of loss w.r.t. weights | Tells how much each weight contributed to the error |
+| **db** | Gradient of loss w.r.t. bias | Average error contribution of the bias |
+| **α** | Learning rate | Controls how large the update step is |
+| **W, b** | Parameters | Updated in the direction that reduces the loss |
+
+### Intuition
+- **dZ (A − Y)** = "How wrong was the prediction?"
+- **dW, db** = "How should we adjust the weights and bias to fix that?"
+- **Gradient descent** = "Take a small step in the opposite direction of the error."
+- **Forward propagation** → “Make a prediction.”
+- **Backward propagation** → “Compare to truth, compute error, adjust parameters.”
+- Each iteration reduces the cost **J**, bringing predictions closer to correct labels.
+
+Step 1: Forward Propagation — Make Predictions: Measure how far the model’s predictions (A) are from the true labels (Y).
+```
+Inputs (X)
+│
+▼
+Linear combination:
+Z = WᵀX + b
+│
+▼
+Activation (Sigmoid):
+A = σ(Z) = 1 / (1 + e^(−Z))
+│
+▼
+Loss function:
+J = −(1/m) Σ [ Y log(A) + (1−Y) log(1−A) ]
+```
+Step 2: Backward Propagation — Compute Derivatives: Find the direction that makes J smaller — this is the **gradient**.
+```
+Start from the loss J
+▲
+│
+├── dZ = A − Y ← how wrong each prediction is
+│
+├── dW = (1/m) X dZᵀ ← how much each weight contributed to the error
+│
+└── db = (1/m) Σ dZ ← average bias error
+```
+Step 3: Gradient Descent — Update Parameters: Move W and b slightly in the direction that **reduces J**.
+```
+W := W − α · dW
+b := b − α · db
+```
+Repeat steps 1–3 until J stops decreasing (model converges).
+
+| Step | What Happens | Purpose |
+|------|---------------|----------|
+| **Forward** | Make predictions | Get A and J |
+| **Backward** | Compute gradients | Know how to fix W and b |
+| **Update** | Adjust parameters | Reduce J next time |
+
+Each loop makes the model slightly **smarter** by reducing its error.
+
+## Broadcasting in Python
+Example
+
+Calories from Carbs, Proteins, Fats in 100g of different foods:
+
+![alt text](_assets/broadcastExp.png)
+
+Calculate % of calories of Carb, Protein and Fat. Can you do this without a for-loop?
+
+Set this matrix as a (3x4) matrix A. We're going to sum down the columns, so we get 4 numbers corresponding to the total number of calories in these 4 diffierent types of foods, then use a second line of Python code to divide each of the four columns by their corresponding sum.
+
+```python
+import numpy as np
+
+A = np.array([[56.0, 0.0, 4.4, 68.0],
+              [1.2,104.0,52.0,8.0],
+              [1.8,135.0,99.0,0.8]])
+
+print(A)
+
+# sum matrix A vertically
+# horizontal will be axis=1
+cal = A.sum(axis=0)
+print(cal)
+#[59 239 155.4 76.9]
+
+# matrix A is 3x4 matrix
+# devide A by 1x4 matrix
+# cal is already 1x4 matrix, no need reshape(1,4)
+# The reshape command is a constant time. It's a order one operation that's very cheap to call.
+percentage = 100*A/cal.reshape(1,4)
+print(percentage)
+```
+![alt text](_assets/broadcasting1.png)
+
+![alt text](_assets/broadcasting2.png)
+
+### General Principle
+(m,n) +-*/ (1,n) -> (m,n)
+
+(m,n) +-*/ (m,1) -> (m,n)
+
+(m,1) +-*/ R (real number) -> copy this real number m times
+
+[1 2 3] + 100 = [101 102 103]
+
+![alt text](_assets/broadcasting3.png)
+
+## A Note on Python/Numpy Vectors
+
+```python
+import numpy as np
+
+a = np.random.randn(5)
+
+print(a)
+print(a.shape) # (5,)
+# a is a rank 1 array, it's neither a row vector nor a column vector
+# And this leads it to have some slightly non-intuitive effects.
+
+print(a.T) # print same array as a
+
+print(np.dot(a,a.T)) 
+# you might think a times a transpose is maybe the outer product should give you matrix maybe, but instead we get back a number.
+
+#I would recommend is that when you're coding new networks, that you just not use data structures where the shape is 5, or n, rank 1 array.
+
+a = np.random.randn(5,1) # column vector
+print(a.T) # gives row vector
+
+print(np.dot(a,a.T)) # gives a matrix
+```
+
+```python
+a = np.random.randn(5)
+```
+-> a.shape = (5,)
+-> rank 1 array
+-> do not use
+
+```python
+a = np.random.randn(5,1)
+```
+-> a.shape = (5,1)
+-> column vector
+
+```python
+a = np.random.randn(1,5)
+```
+-> a.shape = (1,5)
+-> row vector
+
+```python
+assert(a.shape == (5,1))
+```
+Throw in an assertion statement like this, to make sure, in this case, that this is a (5,1) vector. So this is a column vector. 
+
+These assertions are really inexpensive to execute, and they also help to serve as documentation for your code. 
+
+And so takeaways are to simplify your code:
+- Don't use rank 1 arrays. 
+- Always use either n by one matrices, basically column vectors, or one by n matrices, or basically row vectors. 
+- Feel free to toss a lot of insertion statements, so double-check the dimensions of your matrices and arrays.
+- And also, don't be shy about calling the reshape operation to make sure that your matrices or your vectors are the dimension that you need it to be. 
+
+## Explanation of Logistic Regression Cost Function (Optional)
+In Logistic Regression, we have:
+
+$\hat{y}=\sigma(w^Tx+b)$ where $\sigma(z)={1\over{1+e^{-z}}}$
+
+We want to intepret $\hat{y}=p(y=1|x)$ 
+
+-> we want our algorithm to output $\hat{y}$ as the chance that y=1 for a given set of input features x.
+
+* If y=1: $p(y|x)=\hat{y}$ 
+* If y=0: $p(y|x)=1-\hat{y}$ 
+
+$\hat{y}$ was a chance, that y=1, then $1-\hat{y}$ is the chance that y=0.
+
+Summarize the 2 equations above as follow:
+
+$p(y|x)=\hat{y}^y(1-\hat{y})^{1-y}$
+
+Since
+* If y=1: $p(y|x)=\hat{y}$
+* If y=0: $p(y|x)=1-\hat{y}$
+
+Because the log function is a strictly monotonically increasing function, your maximizing log p(y|x) should give you a similar result as optimizing p(y|x). And if you compute log of p(y|x), that’s equal to log of y hat to the power of y, 1 - y hat to the power of 1 - y.
+
+$log p(y|x) = log \hat{y}^y(1-\hat{y})^{1-y} = ylog \hat{y} + (1-y)log(1-\hat{y})$
+
+-> $log p(y|x) = -\ell(\hat{y},y)$
+
+There's a negative sign there because usually if you're training a learning algorithm, you want to make probabilities large whereas in logistic regression we're expressing this, we want to minimize the loss function. 
+
+When training, we want our model to assign:
+- High probability to correct outcomes (e.g., p(y=1|x)=0.99 if it's a cat).
+- Low probability to wrong ones
+So we want to maximize p(y|x).
+
+Optimization algorithms (like gradient descent) are designed to minimize things — not maximize them.
+
+So instead of maximizing p(y|x), we minimize the negative log of it:
+
+Maximize p(y|x) <=> Minimize -logp(y|x)
+
+That’s where the negative sign comes in!
+
+Example:
+```scss
+Prediction (p) →    0.01   0.1   0.5   0.9   0.99
+-log(p)         →   4.6    2.3   0.69  0.10  0.01
+```
+The negative log turns large probabilities into small loss values
+and small probabilities into large losses.
+
+So minimizing the loss corresponds to maximizing the log of the probability.
+
+### Cost on m examples
+
+$p(labels-in-training-set) = \prod_{i=1}^m p(y^{(i)}|x^{(i)})$
+
+So if you want to carry out maximum likelihood estimation, then you want to find the parameters that maximizes the chance of your observations and training set. But maximizing this is the same as maximizing the log, so we just put logs on both sides. 
+
+$logp(labels-in-training-set) = log\prod_{i=1}^m p(y^{(i)}|x^{(i)})$
+
+So log of the probability of the labels in the training set is equal to, log of a product is the sum of the log. 
+
+$logp(labels-in-training-set) = \Sigma_{i=1}^m logp(y^{(i)}|x^{(i)})$
+
+Since
+
+$logp(y^{(i)}|x^{(i)}) = -\ell(\hat{y},y)$
+
+$logp(labels-in-training-set) = -\Sigma_{i=1}^m \ell(\hat{y},y)$
+
+In statistics, there's a principle called the principle of maximum likelihood estimation, which just means to choose the parameters that maximizes $logp(labels-in-training-set)$. Or in other words, that maximizes $-\Sigma_{i=1}^m \ell(\hat{y},y)$
+
+Because we now want to minimize the cost instead of maximizing likelihood, we've got to rid of the minus sign. And then finally for convenience, to make sure that our quantities are better scale, we just add a 1 over m extra scaling factor there. 
+
+$J(w,b) = {1\over m}\Sigma_{i=1}^m \ell(\hat{y},y)$
+
+So to summarize, by minimizing this cost function J(w,b) we're really carrying out maximum likelihood estimation with the logistic regression model. Under the assumption that our training examples were IID, or identically independently distributed. 
+
+![alt text](_assets/Q9.png)
 
