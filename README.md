@@ -13,3 +13,8 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Quiz](./C1-NeuralNetworks-and-DeepLearning/Week2/Quiz/)
 * [Assignments](./C1-NeuralNetworks-and-DeepLearning/Week2/Assignments/)
 
+### Week 3: Shallow Neural Networks
+* [Slides](./C1-NeuralNetworks-and-DeepLearning/Week3/Slides/)
+* [Notes](./C1-NeuralNetworks-and-DeepLearning/Week3/Notes/)
+* [Quiz](./C1-NeuralNetworks-and-DeepLearning/Week3/Quiz/)
+* [Assignments](./C1-NeuralNetworks-and-DeepLearning/Week3/Assignments/)
