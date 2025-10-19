@@ -10,6 +10,28 @@ Build a neural network with one hidden layer, using forward propagation and back
 * Implement a 2-class classification neural network with a single hidden layer
 * Compute the cross entropy loss
 
+- [Shallow Neural Networks](#shallow-neural-networks)
+  - [Neural Networks Overview](#neural-networks-overview)
+    - [What is a Neural Network ?](#what-is-a-neural-network-)
+  - [Neural Network Representation](#neural-network-representation)
+  - [Computing a Neural Network's Output](#computing-a-neural-networks-output)
+  - [Vectorizing Across Multiple Examples](#vectorizing-across-multiple-examples)
+  - [Explanation for Vectorized Implementation](#explanation-for-vectorized-implementation)
+  - [Activation Functions](#activation-functions)
+  - [Why do you need Non-Linear Activation Functions?](#why-do-you-need-non-linear-activation-functions)
+  - [Derivatives of Activation Functions](#derivatives-of-activation-functions)
+    - [Sigmoid activation function](#sigmoid-activation-function)
+    - [Tanh activation function](#tanh-activation-function)
+    - [ReLU and Leaky ReLU](#relu-and-leaky-relu)
+  - [Gradient Descent for Neural Networks](#gradient-descent-for-neural-networks)
+    - [Formulas for computing derivatives](#formulas-for-computing-derivatives)
+      - [FORWARD PROPAGATION (input → output)](#forward-propagation-input--output)
+      - [BACKPROPAGATION (output → input)](#backpropagation-output--input)
+      - [Dimensions (example)](#dimensions-example)
+  - [Backpropagation Intuition (Optional)](#backpropagation-intuition-optional)
+  - [Random Initialization](#random-initialization)
+
+
 ## Neural Networks Overview
 ### What is a Neural Network ?
 In Logistic Regression, we put the features x and parameters w and b that allows you to compute z which is then used to computes a, and we were using a interchangeably with this output y hat and then you can compute the loss function, L.
@@ -71,8 +93,8 @@ This network is called 2 layer neural network. Because when we count layers in N
 - Output layer = layer 2
 
 The hidden layer and the output layers will have parameters associated with them. 
-- The hidden layer will have parameters $w^{[1]}$ and $b{[1]}$, in this case w is 4x3 matrix (4 nodes hidden layer and 3 input features) and b is 4x1 vector. 
-- Output layer will have $w^{[2]}$ which is 1x4 vector (hidden layer has 4 hidden units and output layer has just 1 unit) and $b{[2]}$ which is 1x1.
+- The hidden layer will have parameters $w^{[1]}$ and $b^{[1]}$, in this case w is 4x3 matrix (4 nodes hidden layer and 3 input features) and b is 4x1 vector. 
+- Output layer will have $w^{[2]}$ which is 1x4 vector (hidden layer has 4 hidden units and output layer has just 1 unit) and $b^{[2]}$ which is 1x1.
 
 ## Computing a Neural Network's Output
 We've said before that logistic regression, the circle in logistic regression, really represents two steps of computation rows: compute z and a (activation as a sigmoid function of z).
@@ -265,7 +287,7 @@ _I pretty much never use the sigmoid activation function anymore. The tanh funct
 
 What you see in this example is where you might have a tanh activation function for the hidden layer and sigmoid for the output layer. So the activation functions can be different for different layers. And sometimes to denote that the activation functions are different for different layers, we might use square brackets superscripts as well to indicate that $g^{[1]}$ may be different than $g^{[2]}$.
 
-One of the downsides of both the sigmoid function and the tan h function is that if z is either very large or very small, then the gradient of the derivative of the slope of this function becomes very small. So if z is very large or z is very small, the slope of the function either ends up being close to zero and so this can slow down gradient descent. So one other choice that is very popular in machine learning is what's called the rectified linear unit (ReLU).
+One of the downsides of both the sigmoid function and the tanh function is that if z is either very large or very small, then the gradient of the derivative of the slope of this function becomes very small. So if z is very large or z is very small, the slope of the function either ends up being close to zero and so this can slow down gradient descent. So one other choice that is very popular in machine learning is what's called the rectified linear unit (ReLU).
 
 |z|	sigmoid(z)| (slope)|
 |-|-|-|
