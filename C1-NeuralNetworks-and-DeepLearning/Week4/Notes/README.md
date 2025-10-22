@@ -8,6 +8,16 @@
 * Explain the role of hyperparameters in deep learning
 * Build a 2-layer neural network
 
+- [Deep Neural Networks](#deep-neural-networks)
+  - [Deep L-layer Neural Network](#deep-l-layer-neural-network)
+  - [Forward Propagation in a Deep Network](#forward-propagation-in-a-deep-network)
+  - [Getting your Matrix Dimensions Right](#getting-your-matrix-dimensions-right)
+  - [Why Deep Representations?](#why-deep-representations)
+  - [Building Blocks of Deep Neural Networks](#building-blocks-of-deep-neural-networks)
+  - [Forward and Backward Propagation](#forward-and-backward-propagation)
+  - [Parameters vs Hyperparameters](#parameters-vs-hyperparameters)
+  - [What does this have to do with the brain?](#what-does-this-have-to-do-with-the-brain)
+
 ## Deep L-layer Neural Network
 
 ![alt text](_assets/LogisticRegression.png)
@@ -207,10 +217,85 @@ require exponentially more hidden units to compute.
 
 So the number of nodes or the number of circuit components or the number of gates in this network is not that large. You don't need that many gates in order to compute the exclusive OR. 
 
-If you are not allowed to use a neural network with multiple hidden layers with, in this case, order log and hidden layers, if you're forced to compute this function with just one hidden layer, so you have all these things going into the hidden units. And then these things then output Y. Then in order to compute this XOR function, this hidden layer will need to be exponentially large, because essentially, you need to exhaustively enumerate our 2 to the N possible configurations. So on the order of 2 to the N, possible configurations of the input bits that result in the exclusive OR being either 1 or 0. So you end up needing a hidden layer that is exponentially large in the number of bits. I think technically, you could do this with 2 to the N minus 1 hidden units. But that's the order 2 to the N, so it's going to be exponentially larger on the number of bits.
+If you are not allowed to use a neural network with multiple hidden layers with, in this case, order logN hidden layers, if you're forced to compute this function with just one hidden layer, so you have all these things going into the hidden units. And then these things then output Y. Then in order to compute this XOR function, this hidden layer will need to be exponentially large, because essentially, you need to exhaustively enumerate our 2 to the N possible configurations. So on the order of 2 to the N, possible configurations of the input bits that result in the exclusive OR being either 1 or 0. So you end up needing a hidden layer that is exponentially large in the number of bits. I think technically, you could do this with 2 to the N minus 1 hidden units. But that's the order 2 to the N, so it's going to be exponentially larger on the number of bits.
 
 ![alt text](_assets/CircuitHiddenLayer.png)
 
 ## Building Blocks of Deep Neural Networks
 
+![alt text](_assets/Pick1Layer.png)
+
+Pick 1 layer from the above network.
+
+For layer l: $W^{[l]}$ and $b^{[l]}$
+
+Forward prop: Input activation $a^{[l-1]}$ from the previous layer, output $a^{[l]}$
+
+$z^{[l]} = W^{[l]}a^{[l-1]} + b^{[l]}$, cache $z^{[l]}$ for backward propagation step.
+
+$a^{[l]} = g^{[l]}(z^{[l]})$
+
+Back prop:
+* Input $da^{[l]}$, cache $z^{[l]}$
+* Output $da^{[l-1]}$, $dW^{[l]}$, $db^{[l]}$
+
+![alt text](_assets/InOutLayerl.png)
+
+![alt text](_assets/ForwardBackFunctions.png)
+
+## Forward and Backward Propagation
+Forward propagation for layer l
+* Input $a^{[l-1]}$
+* Output $a^{[l]}$, cache ($z^{[l]}$)(we also cache $W^{[l]}$ and $b^{[l]}$)
+
+* $z^{[l]} = W^{[l]}a^{[l-1]} + b^{[l]}$
+* $a^{[l]} = g^{[l]}(z^{[l]})$
+
+Vectorized:
+* $Z^{[l]} = W^{[l]}A^{[l-1]} + b^{[l]}$
+* $A^{[l]} = g^{[l]}(Z^{[l]})$
+
+Backward propagation for layer l
+* Input $da^{[l]}$
+* Output $da^{[l-1]}$, $dW^{[l]}$, $db^{[l]}$
+
+Computation steps:
+* $dz^{[l]} = da^{[l]} * g^{[l]'}(z^{[l]})$
+* $dW^{[l]} = dz^{[l]}a^{[l-1]T}$
+* $db^{[l]} = dz^{[l]}$
+* $da^{[l-1]} = W^{[l]T}dz^{[l]}$
+* $dz^{[l]} = W^{[l+1]T}dz^{[l+1]}*g^{[l]'}(z^{[l]})$
+
+Vectorized:
+* $dZ^{[l]} = dA^{[l]} * g^{[l]'}(Z^{[l]})$
+* $dW^{[l]} = {1 \over m}dZ^{[l]}A^{[l-1]T}$
+* $db^{[l]} = {1 \over m}np.sum(dZ^{[l]},axis=1,kepdims=True)$
+* $dA^{[l-1]} = W^{[l]T}dZ^{[l]}$
+
+![alt text](_assets/ForwardBackProp.png)
+
+## Parameters vs Hyperparameters
+Parameters: $W^{[1]}, b^{[1]}, W^{[2]}, b^{[2]}, W^{[3]}, b^{[3]}...$
+
+Hyperparameters: learning rate $\alpha$, number of iterations of gradient descent, number of hidden layers L, number of hidden units $n^{[1]}, n^{[2]}, ...$, choice of activation function, ... All of these things are things that you need to tell your learning algorithm and so these are parameters that control the ultimate parameters W and b and so we call all of these things below hyper parameters.
+
+Other hyperparameters: momentum, mini batch size, various form of regularizations parameters,...
+
+![alt text](_assets/AppliedDLProcess.png)
+
+For example, you might have an idea for the best value for the learning rate. You might say, well maybe alpha equals 0.01. I want to try that. Then you implement, try it out, and then see how that works. Based on that outcome you might say, I want to increase the learning rate to 0.05. So, if you're not sure what the best value for the learning rate to use. You might try one value of the learning rate alpha and see their cost function J go down like this, then you might try a larger value for the learning rate alpha and see the cost function blow up and diverge. Then, you might try another version and see it go down really fast. it's inverse to higher value. You might try another version and see the cost function J do that then. I'll be trying to set the values. So you might say, okay looks like this the value of alpha. It gives me a pretty fast learning and allows me to converge to a lower cost function j and so I'm going to use this value of alpha.
+
+![alt text](_assets/cost.png)
+
+* I've seen researchers from one discipline, any one of these, and try to go to a different one. And sometimes the intuitions about hyper parameters carries over and sometimes it doesn't, so I often advise people, especially when starting on a new problem, to just try out a range of values and see what w. In the next course we'll see some systematic ways for trying out a range of values. 
+* Even if you're working on one application for a long time, you know maybe you're working on online advertising, as you make progress on the problem it is quite possible that the best value for the learning rate, a number of hidden units, and so on might change. So even if you tune your system to the best value of hyper parameters today it's possible you'll find that the best value might change a year from now maybe because the computer infrastructure, be it you know CPUs, or the type of GPU running on, or something has changed. So maybe one rule of thumb is every now and then, maybe every few months, if you're working on a problem for an extended period of time for many years just try a few values for the hyper parameters and double check if there's a better value for the hyper parameters. As you do so you slowly gain intuition as well about the hyper parameters that work best for your problems.
+
+## What does this have to do with the brain?
+![alt text](_assets/ForwardFunc.png)
+
+![alt text](_assets/BackwardFunc.png)
+
+In this picture of a biological neuron, this neuron, which is a cell in your brain, receives electric signals from other neurons, X1, X2, X3, or maybe from other neurons, A1, A2, A3, does a simple thresholding computation, and then if this neuron fires, it sends a pulse of electricity down the axon, down this long wire, perhaps to other neurons. There is a very simplistic analogy between a single neuron in a neural network, and a biological neuron. But I think that today even neuroscientists have almost no idea what even a single neuron is doing. A single neuron appears to be much more complex than we are able to characterize with neuroscience, and while some of what it's doing is a little bit like logistic regression, there's still a lot about what even a single neuron does that no one human today understands. For example, exactly how neurons in the human brain learns is still a very mysterious process, and it's completely unclear today whether the human brain uses an algorithm, does anything like back propagation or gradient descent or if there's some fundamentally different learning principle that the human brain uses. When I think of deep-learning, I think of it as being very good and learning very flexible functions, very complex functions, to learn X to Y mappings, to learn input-output mappings in supervised learning. Whereas this is like the brain analogy, maybe that was useful once, I think the field has moved to the point where that analogy is breaking down, and I tend not to use that analogy much anymore. 
+
+![alt text](_assets/Neuron.png)
 
