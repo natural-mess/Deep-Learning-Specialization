@@ -24,3 +24,10 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C1-NeuralNetworks-and-DeepLearning/Week4/Notes/)
 * [Quiz](./C1-NeuralNetworks-and-DeepLearning/Week4/Quiz/)
 * [Assignments](./C1-NeuralNetworks-and-DeepLearning/Week4/Assignments/)
+
+## [Course 2: Improving Deep Neural Networks: Hyperparameter Tuning, Regularization and Optimization](./C2-ImprovingDeepNeuralNetworks/)
+### Week 1: Practical Aspects of Deep Learning
+* [Slides](./C2-ImprovingDeepNeuralNetworks/Week1/Slides/)
+* [Notes](./C2-ImprovingDeepNeuralNetworks/Week1/Notes/)
+* [Quiz](./C2-ImprovingDeepNeuralNetworks/Week1/Quiz/)
+* [Assignments](./C2-ImprovingDeepNeuralNetworks/Week1/Assignments/)
