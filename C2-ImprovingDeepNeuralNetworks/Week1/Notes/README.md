@@ -524,5 +524,8 @@ Let a be a single activation value, and let d be the dropout mask for that eleme
 
 Take expectation over the randomness of d:
 
+![alt text](_assets/Expectation.png)
+
+So the expected (average) post-dropout activation equals the original activation a. This ensures that, on average, the scale of activations is the same during training (so we don't have to rescale at test time).
 
 ## Understanding Dropout
