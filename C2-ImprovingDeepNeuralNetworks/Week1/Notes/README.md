@@ -529,3 +529,240 @@ Take expectation over the randomness of d:
 So the expected (average) post-dropout activation equals the original activation a. This ensures that, on average, the scale of activations is the same during training (so we don't have to rescale at test time).
 
 ## Understanding Dropout
+Drop out randomly knocks out units in your network. So it's as if on every iteration you're working with a smaller neural network. And so using a smaller neural network seems like it should have a regularizing effect. 
+
+Let's look at it from the perspective of a single unit. N
+
+![alt text](_assets/SingleUnit.png)
+
+For this unit to do his job has four inputs and it needs to generate some meaningful output. Now with drop out, the inputs can get randomly eliminated. Sometimes those two units will get eliminated. Sometimes a different unit will get eliminated. So what this means is that this unit which I'm circling purple.
+
+It can't rely on anyone feature because anyone feature could go away at random or anyone of its own inputs could go away at random.
+
+So in particular, I will be reluctant to put all of its bets on say just this input, right. The ways were reluctant to put too much weight on anyone input because it could go away. So this unit will be more motivated to spread out this ways and give you a little bit of weight to each of the four inputs to this unit. And by spreading out the weights this will tend to have an effect of shrinking the squared norm of the weights, and so similar to what we saw with L2 regularization. The effect of implementing dropout is that its strength the ways and similar to L2 regularization, it helps to prevent overfitting, but it turns out that dropout can formally be shown to be an adaptive form of L2 regularization, but the L2 penalty on different ways are different depending on the size of the activation is being multiplied into that way. But to summarize it is possible to show that dropout has a similar effect to. 
+
+Deep nets with many hidden units can overfit: they learn spurious patterns tied to the training set that don’t generalize.
+
+Some hidden units may co-adapt: they become overly reliant on each other.
+
+Dropout breaks these co-adaptations by randomly “dropping” units during training, so each unit must work somewhat independently.
+
+“Dropout makes a network behave like many different “thinned” networks and then average them at test time.”
+
+Let’s imagine one neuron (let’s call it N) in your neural network.
+This neuron has four inputs coming in — like this:
+
+```css
+input1 → \
+input2 →  \
+input3 →   → [ N ] → output
+input4 →  /
+```
+
+Each input has a weight (W₁, W₂, W₃, W₄).
+These weights decide how much the neuron listens to each input.
+
+So normally, N computes:
+
+```ini
+output = W₁*x₁ + W₂*x₂ + W₃*x₃ + W₄*x₄
+```
+
+Now, dropout randomly turns off some inputs each time.
+
+So sometimes:
+
+```java
+input1 and input3 are gone (dropped)
+```
+
+Other times:
+
+```sql
+input2 and input4 are gone
+```
+
+So for each training step, the neuron receives different combinations of inputs.
+
+If you’re this neuron (N), you quickly learn:
+
+“Hey, I can’t depend too much on any single input… because it might disappear next time!”
+
+So instead of giving one input a huge weight (like W₃ = 10, and others = 0.1), you’ll spread your attention more evenly across all inputs.
+
+That is, you’ll make:
+```
+W₁, W₂, W₃, W₄ more balanced
+```
+
+This spreading out of weights helps the network be less fragile and more general — it doesn’t collapse if one feature (input) is missing or noisy.
+
+Let’s recall what L2 regularization (a.k.a. “weight decay”) does:
+
+* It penalizes very large weights.
+* This keeps the model from “overfitting” — memorizing data too precisely.
+
+Now look at what dropout just did:
+* It made the neuron reluctant to make any weight too large,
+because that input could vanish at any time.
+* So dropout ends up having the same effect: it reduces the size of weights, helping prevent overfitting.
+
+That’s why Andrew says:
+
+“Dropout is like an adaptive form of L2 regularization.”
+
+The word adaptive means:
+
+* The effect depends on how active each input is.
+* Inputs that are often dropped or have smaller activations get slightly different penalty strengths — but the overall effect is like L2 regularization.
+
+One more detail for when you're implementing dropout, here's a network where you have three input features. 
+
+![alt text](_assets/NNDropoutExample.png)
+
+This is seven hidden units here. 7, 3, 2, 1, so one of the practice we have to choose was the keep prop which is a chance of keeping a unit in each layer. So it is also feasible to vary keep-propped by layer. So for the first layer, your matrix W1 will be 7 by 3. Your second weight matrix will be 7 by 7. W3 will be 3 by 7 and so on. And so W2 is actually the biggest weight matrix, right? Because they're actually the largest set of parameters. B and W2, which is 7 by 7. So to prevent, to reduce overfitting of that matrix, maybe for this layer, I guess this is layer 2, you might have a key prop that's relatively low, say 0.5, whereas for different layers where you might worry less about over 15, you could have a higher key problem. Maybe just 0.7, maybe this is 0.7. And then for layers we don't worry about overfitting at all. You can have a key prop of 1.0. Right? So, you know, for clarity, these are numbers I'm drawing in the purple boxes. These could be different key props for different layers. Notice that the key problem 1.0 means that you're keeping every unit, and so you're really not using drop out for that layer. But for layers where you're more worried about overfitting really the layers with a lot of parameters you could say keep_prop to be smaller to apply a more powerful form of dropout. It's kind of like cranking up the regularization. Parameter lambda of L2 regularization where you try to regularize some layers more than others.
+
+Technically you can also apply drop out to the input layer where you can have some chance of just acting out one or more of the input features, although in practice, usually don't do that often. And so key problem of 1.0 is quite common for the input there. You might also use a very high value, maybe 0.9 but is much less likely that you want to eliminate half of the input features. So usually keep_prop, if you apply that all will be a number close to 1. If you even apply dropout at all to the input layer. 
+
+To summarize, if you're more worried about some layers of fitting than others, you can set a lower key prop for some layers than others. The downside is this gives you even more hyperparameters to search for using cross validation. One other alternative might be to have some layers where you apply dropout and some layers where you don't apply drop out and then just have one hyper parameter which is a keep_prop for the layers for which you do apply drop out.
+
+Many of the first successful implementations of dropouts were to computer vision, so in computer vision, the input sizes so big in putting all these pixels that you almost never have enough data. And so drop out is very frequently used by the computer vision and there are some common vision research is that pretty much always use it almost as a default. But really, the thing to remember is that drop out is a regularization technique, it helps prevent overfitting. And so unless my algorithm is overfitting, I wouldn't actually bother to use drop out. 
+
+So as you somewhat less often in other application areas, there's just a computer vision, you usually just don't have enough data so you almost always overfitting, which is why they tend to be some computer vision researchers swear by drop out by the intuition.
+
+One big downside of drop out is that the cost function J is no longer well defined on every iteration. You're randomly, calling off a bunch of notes. And so if you are double checking the performance of gradient descent is actually harder to double check that you have a well defined cost function J that is going downhill on every iteration. Because the cost function J that you're going to optimizing is actually less well defined and it's certainly hard to calculate. So you lose this debugging tool to have a plot a draft like this. So what I usually do is turn off drop out or if you will set keep-prop = 1 and run my code and make sure that it is monitored quickly decreasing J. And then turn on drop out and hope that, I didn't introduce bug to my code during drop out because you need other ways, I guess, but not plotting these figures to make sure that your code is working, the gradient descent is working even with drop out. 
+
+![alt text](_assets/CostJ.png)
+
+## Other Regularization Methods
+
+Let's say you fitting a cat classifier. If you are over fitting getting more training data can help, but getting more training data can be expensive and sometimes you just can't get more data. 
+
+But what you can do is augment your training set by taking image like this. And for example, flipping it horizontally and adding that also with your training set. So now instead of just this one example in your training set, you can add this to your training example. 
+
+![alt text](_assets/CatDataAugmentation.png)
+
+So by flipping the images horizontally, you could double the size of your training set. Because you're training set is now a bit redundant this isn't as good as if you had collected an additional set of brand new independent examples. But you could do this Without needing to pay the expense of going out to take more pictures of cats. 
+
+And then other than flipping horizontally, you can also take random crops of the image. So here we're rotated and sort of randomly zoom into the image and this still looks like a cat. So by taking random distortions and translations of the image you could augment your data set and make additional fake training examples. Again, these extra fake training examples they don't add as much information as they were to get a brand new independent example of a cat. But because you can do this, almost for free, other than for some computational costs. This can be an inexpensive way to give your algorithm more data and therefore sort of regularize it and reduce over fitting. 
+
+Notice I didn't flip it vertically, because maybe we don't want upside down cats. And then also maybe randomly zooming in to part of the image it's probably still a cat. 
+
+For optical character recognition you can also bring your data set by taking digits and imposing random rotations and distortions to it. So If you add these things to your training set, these are also still digit force.
+
+![alt text](_assets/DigitDataAugmentation.png)
+
+For illustration I applied a very strong distortion. So this look very wavy number four, in practice you don't need to distort the four quite as aggressively, but just a more subtle distortion than what I'm showing here, to make this example clearer for you. But a more subtle distortion is usually used in practice, because this looks like really warped fours. So data augmentation can be used as a regularization technique, in fact similar to regularization. 
+
+There's one other technique that is often used called early stopping. So what you're going to do is as you run gradient descent you're going to plot your, either the training error, you'll use 0 - 1 classification error on the training set. Or just plot the cost function J optimizing, and that should decrease monotonically.
+
+![alt text](_assets/trainingErr.png)
+
+So with early stopping, what you do is you plot this, and you also plot your dev set error. And again, this could be a classification error in a development sense, or something like the cost function, like the logistic loss or the log loss of the dev set. 
+
+![alt text](_assets/devSetErr.png)
+
+Now what you find is that your dev set error will usually go down for a while, and then it will increase from there. So what early stopping does is, you will say well, it looks like your neural network was doing best around that iteration, so we just want to stop training on your neural network halfway and take whatever value achieved this dev set error.
+
+So why does this work? Well when you've haven't run many iterations for your neural network yet your parameters w will be close to zero. 
+
+![alt text](_assets/wCloseTo0.png)
+
+Because with random initialization you probably initialize w to small random values so before you train for a long time, w is still quite small.
+
+And as you iterate, as you train, w will get bigger and bigger and bigger until here maybe you have a much larger value of the parameters w for your neural network. 
+
+![alt text](_assets/largeW.png)
+
+So what early stopping does is by stopping halfway you have only a mid-size rate w. 
+
+![alt text](_assets/midSizeW.png)
+
+And so similar to L2 regularization by picking a neural network with smaller norm for your parameters w, hopefully your neural network is over fitting less. And the term early stopping refers to the fact that you're just stopping the training of your neural network earlier. 
+
+I sometimes use early stopping when training a neural network. But it does have 1 downside.
+
+ML process comprises several steps:
+1. An algorithm to optimize the cost function J and we have various tools to do that, such as gradien descent. (There are also momentum, RMS prop, Atom and so on)
+2. We want it to not overfit. We have some tools such as regularization, getting more data, so on...
+
+Now in machine learning, we already have so many hyper-parameters it surge over. It's already very complicated to choose among the space of possible algorithms. 
+
+And so I find machine learning easier to think about when you have one set of tools for optimizing the cost function J, and when you're focusing on authorizing the cost function J. All you care about is finding w and b, so that J(w,b) is as small as possible. You just don't think about anything else other than reducing this. 
+
+And then it's completely separate task to not over fit, in other words, to reduce variance. And when you're doing that, you have a separate set of tools for doing it. 
+
+This principle is sometimes called **orthogonalization**. And there's this idea, that you want to be able to think about one task at a time. 
+
+The main downside of early stopping is that this couples these two tasks. So you no longer can work on these two problems independently, because by stopping gradient decent early, you're sort of breaking whatever you're doing to optimize cost function J, because now you're not doing a great job reducing the cost function J. You've sort of not done that that well. And then you also simultaneously trying to not over fit. So instead of using different tools to solve the two problems, you're using one that kind of mixes the two. And this just makes the set of things you could try are more complicated to think about. 
+
+![alt text](_assets/earlyStopping.png)
+
+Rather than using early stopping, one alternative is just use L2 regularization then you can just train the neural network as long as possible. I find that this makes the search space of hyper parameters easier to decompose, and easier to search over. 
+
+The downside of this though is that you might have to try a lot of values of the regularization parameter lambda. And so this makes searching over many values of lambda more computationally expensive. 
+
+The advantage of early stopping is that running the gradient descent process just once, you get to try out values of small w, mid-size w, and large w, without needing to try a lot of values of the L2 regularization hyperparameter lambda.
+
+Despite it's disadvantages, many people do use it. I personally prefer to just use L2 regularization and try different values of lambda. That's assuming you can afford the computation to do so. But early stopping does let you get a similar effect without needing to explicitly try lots of different values of lambda.
+
+## Normalizing Inputs
+When training a neural network, one of the techniques to speed up your training is if you normalize your inputs.
+
+![alt text](_assets/2inputSet.png)
+
+Let's see the training sets with two input features. The input features x are two-dimensional and here's a scatter plot of your training set.
+
+Normalizing inputs corresponds to 2 steps.
+1. Subtract out or zero out the mean, so sets mu equals 1 over m, sum over i of $x_i$. This is a vector and then x gets set as x minus mu for every training example.
+
+![alt text](_assets/Step1.png)
+
+This means that you just move the training set until it has zero mean. 
+
+![alt text](_assets/zeroMean.png)
+
+2. Normalize the variances. Notice here that the feature x_1 has a much larger variance than the feature x_2 here. What we do is set sigma equals 1 over m sum of x_i star, star 2. I guess this is element-wise squaring. Now sigma squared is a vector with the variances of each of the features. Notice we've already subtracted out the mean, so x_i squared, element-wise square is just the variances. You take each example and divide it by this vector sigma.
+
+![alt text](_assets/Step2.png)
+
+![alt text](_assets/Step2Picture.png)
+
+Now the variance of x_1 and x_2 are both equal to one.
+
+One tip. If you use this to scale your training data, then use the same mu and sigma to normalize your test set. In particular, you don't want to normalize the training set and a test set differently. Whatever this value is and whatever this value is, use them in these two formulas so that you scale your test set in exactly the same way rather than estimating mu and sigma squared separately on your training set and test set, because you want your data both training and test examples to go through the same transformation defined by the same Mu and Sigma squared calculated on your training data.
+
+![alt text](_assets/normalizeTrainingSet.png)
+
+Why do we do this? Why do we want to normalize the input features?
+
+![alt text](_assets/costFunction.png)
+
+It turns out that if you use unnormalized input features, it's more likely that your cost function will look like this, like a very squished out bar, very elongated cost function where the minimum you're trying to find is maybe over there.
+
+![alt text](_assets/unnormalized.png)
+
+But if your features are on very different scales, say the feature x_1 ranges from 1-1,000 and the feature x_2 ranges from 0-1, then it turns out that the ratio or the range of values for the parameters w_1 and w_2 will end up taking on very different values. Maybe these axes should be w_1 and w_2, but the intuition of plot w and b, cost function can be very elongated bow like that. If you plot the contours of this function, you can have a very elongated function like that. 
+
+![alt text](_assets/unnormalizedContour.png)
+
+Whereas if you normalize the features, then your cost function will on average look more symmetric. 
+
+![alt text](_assets/normalized.png)
+
+If you are running gradient descent on a cost function like the unnormalized one, then you might have to use a very small learning rate because if you're here, the gradient decent might need a lot of steps to oscillate back and forth before it finally finds its way to the minimum. 
+
+![alt text](_assets/unnormalizedContour.png)
+
+Whereas if you have more spherical contours, then wherever you start, gradient descent can pretty much go straight to the minimum. You can take much larger steps where gradient descent need, rather than needing to oscillate around like the picture on the left. Of course, in practice, w is a high dimensional vector.
+
+![alt text](_assets/normalizedContour.png)
+
+Trying to plot this in 2D doesn't convey all the intuitions correctly. But the rough intuition that you cost function will be in a more round and easier to optimize when you're features are on similar scales. Not from 1-1000, 0-1, but mostly from -1 to 1 or about similar variance as each other. That just makes your cost function j easier and faster to optimize.
+
+In practice, if one feature, say x_1 ranges from 0-1 and x_2 ranges from -1 to 1, and x_3 ranges from 1-2, these are fairly similar ranges, so this will work just fine, is when they are on dramatically different ranges like ones from 1-1000 and another from 0-1. That really hurts your optimization algorithm. That by just setting all of them to zero mean and say variance one like we did on the last slide, that just guarantees that all your features are in a similar scale and will usually help you learning algorithm run faster.
+
+If your input features came from very different scales, maybe some features are from 0-1, sum from 1-1000, then it's important to normalize your features. If your features came in on similar scales, then this step is less important although performing this type of normalization pretty much never does any harm. Often you'll do it anyway, if I'm not sure whether or not it will help with speeding up training for your algorithm. That's it for normalizing your input features.
+
+## Vanishing / Exploding Gradients
+
