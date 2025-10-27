@@ -765,4 +765,258 @@ In practice, if one feature, say x_1 ranges from 0-1 and x_2 ranges from -1 to 1
 If your input features came from very different scales, maybe some features are from 0-1, sum from 1-1000, then it's important to normalize your features. If your features came in on similar scales, then this step is less important although performing this type of normalization pretty much never does any harm. Often you'll do it anyway, if I'm not sure whether or not it will help with speeding up training for your algorithm. That's it for normalizing your input features.
 
 ## Vanishing / Exploding Gradients
+One of the problems of training neural network, especially very deep neural networks, is data vanishing and exploding gradients. What that means is that when you're training a very deep network your derivatives or your slopes can sometimes get either very, very big or very, very small, maybe even exponentially small, and this makes training difficult. 
+
+![alt text](_assets/deepNNExample.png)
+
+This neural network will have parameters W1, W2, W3 and so on up to WL. For the sake of simplicity, let's say we're using an activation function G of Z equals Z, so linear activation function. And let's ignore B, let's say B of L equals zero. 
+
+![alt text](_assets/deepNNExampleInfo.png)
+
+In that case you can show that the output Y will be WL times WL minus one times WL minus two, dot, dot, dot down to the W3, W2, W1 times X. 
+
+If you want to just check my math, W1 times X is going to be Z1, because B is equal to zero. So Z1 is equal to, I guess, W1 times X and then plus B which is zero. But then A1 is equal to G of Z1. But because we use linear activation function, this is just equal to Z1. So this first term W1X is equal to A1. And then by the reasoning you can figure out that W2 times W1 times X is equal to A2, because that's going to be G of Z2, is going to be G of W2 times A1 which you can plug that in here. 
+
+![alt text](_assets/deepNNExampleFunc.png)
+
+So this thing is going to be equal to A2, and then this thing is going to be A3 and so on until the protocol of all these matrices gives you Y-hat, not Y.
+
+![alt text](_assets/deepNNExampleFunc2.png)
+
+Let's say that each of you weight matrices WL is just a little bit larger than one times the identity. So it's 1.5_1.5_0_0. Technically, the last one has different dimensions so maybe this is just the rest of these weight matrices. 
+
+![alt text](_assets/deepNNExampleW.png)
+
+Then Y-hat will be, ignoring this last one with different dimension, this 1.5_0_0_1.5 matrix to the power of L minus 1 times X, because we assume that each one of these matrices is equal to this thing. It's really 1.5 times the identity matrix, then you end up with this calculation. And so Y-hat will be essentially 1.5 to the power of L, to the power of L minus 1 times X, and if L was large for very deep neural network, Y-hat will be very large. In fact, it just grows exponentially, it grows like 1.5 to the number of layers. And so if you have a very deep neural network, the value of Y will explode.
+
+![alt text](_assets/deepNNExampleYhat.png)
+
+Now, conversely, if we replace 1.5 with 0.5, so something less than 1, then this becomes 0.5 to the power of L. This matrix becomes 0.5 to the L minus 1 times X, again ignoring WL. 
+
+![alt text](_assets/deepNNExampleReplaceValue.png)
+
+And so each of your matrices are less than 1, then let's say X1, X2 were one one, then the activations will be one half, one half, one fourth, one fourth, one eighth, one eighth, and so on until this becomes one over two to the L. 
+
+![alt text](_assets/deepNNExample2.png)
+
+So the activation values will decrease exponentially as a function of the def, as a function of the number of layers L of the network. So in the very deep network, the activations end up decreasing exponentially. 
+
+Intuition
+1. If weight $W^{[l]}$ is bigger than 1 or bigger than identity matrix, then with a very deep network, the activations can explode. And when gradients (errors) flow backward through these same weights, they also get multiplied by those large numbers repeatedly, so gradients explode too — making updates unstable or overflow.
+2. If weight $W^{[l]}$ is a little bit less than 1 or bigger than identity matrix, then with a very deep network, the activations can decrease exponentially. Gradients become tiny, Weight updates become so small that the network stops learning.
+
+Even though I went through this argument in terms of activations increasing or decreasing exponentially as a function of L, a similar argument can be used to show that the derivatives or the gradients the computer is going to send will also increase exponentially or decrease exponentially as a function of the number of layers.
+
+With some of the modern neural networks, L equals 150. Microsoft recently got great results with 152 layer neural network. But with such a deep neural network, if your activations or gradients increase or decrease exponentially as a function of L, then these values could get really big or really small. And this makes training difficult, especially if your gradients are exponentially smaller than L, then gradient descent will take tiny little steps. It will take a long time for gradient descent to learn anything. 
+
+## Weight Initialization for Deep Networks
+In the last video you saw how very deep neural networks can have the problems of vanishing and exploding gradients. It turns out that a partial solution to this, doesn't solve it entirely but helps a lot, is **better or more careful choice of the random initialization for your neural network**. 
+
+![alt text](_assets/SingleNeuronExample.png)
+
+Let's go through this with an example with just a single neuron, and then we'll talk about the deep net later. So with a single neuron, you might input four features, x1 through x4, and then you have some a=g(z) and then it outputs some y. And later on for a deeper net, you know these inputs will be some layer $a^{[l]}$, but for now let's just call this x for now. So z is going to be equal to $w_1x_1 + w_2x_2 +... + W_nX_n$. 
+
+Let's set b = 0.
+
+In order to make z not blow up and not become too small, you notice that the larger n is, the smaller you want $W_i$ to be. Because z is the sum of the $W_iX_i$, so if you're adding up a lot of these terms, you want each of these terms to be smaller. 
+
+One reasonable thing to do would be to set the variance of W to be equal to 1 over n, where n is the number of input features that's going into a neuron. 
+
+$Var(W) = 1 \over n$
+
+In practice
+
+$W^{[l]}$ = np.random.randn(shape) * np.sqrt($1/n^{[l-1]}$)
+
+because l-1 the number of units that I'm feeding into each of the units in layer l.
+
+It turns out that if you're using a ReLu activation function that, rather than 1 over n it turns out that, set in the variance of 2 over n works a little bit better. 
+
+$Var(W) = 2 \over n$
+
+$W^{[l]}$ = np.random.randn(shape) * np.sqrt($2/n^{[l-1]}$)
+
+So you often see that in initialization, especially if you're using a ReLu activation function. So if gl(z) = ReLu(z).
+
+If the input features of activations are roughly mean 0 and standard variance, variance 1 then this would cause z to also take on a similar scale. And this doesn't solve, but it definitely helps reduce the vanishing, exploding gradients problem, because it's trying to set each of the weight matrices w, you know, so that it's not too much bigger than 1 and not too much less than 1 so it doesn't explode or vanish too quickly.
+
+The version we just described is assuming a ReLu activation function. A few other variants, if you are using a TanH activation function then there's a paper that shows that instead of using the constant 2, it's better use the constant 1 and so 1 over this instead of 2. 
+
+![alt text](_assets/tanhActivationWInit.png)
+
+This is called Xavier initialization. 
+
+![alt text](_assets/YoshuaInit.png)
+
+Another version we're taught by Yoshua Bengio and his colleagues, you might see in some papers, but is to use this formula, which you know has some other theoretical justification, but I would say if you're using a ReLu activation function, which is really the most common activation function, I would use this formula.
+
+![alt text](_assets/ReLUInit.png)
+
+In practice I think all of these formulas just give you a starting point. It gives you a default value to use for the variance of the initialization of your weight matrices. If you wish the variance here, this variance parameter could be another thing that you could tune with your hyperparameters. So you could have another parameter that multiplies into this formula and tune that multiplier as part of your hyperparameter surge. 
+
+Sometimes tuning the hyperparameter has a modest size effect. It's not one of the first hyperparameters I would usually try to tune, but I've also seen some problems where tuning this helps a reasonable amount. But this is usually lower down for me in terms of how important it is relative to the other hyperparameters you can tune.
+
+## Numerical Approximation of Gradients
+When you implement back propagation you'll find that there's a test called gradient checking that can really help you make sure that your implementation of back prop is correct. Because sometimes you write all these equations and you're just not 100% sure if you've got all the details right in implementing back propagation.
+
+![alt text](_assets/FunctionF.png)
+
+Let's take the function f and replot it here and remember this is f of theta equals theta cubed, and let's again start off to some value of theta. Let's say theta equals 1. Now instead of just nudging theta to the right to get theta plus epsilon, we're going to nudge it to the right and nudge it to the left to get theta minus epsilon, as was theta plus epsilon.
+
+![alt text](_assets/FunctionFwithEpsilon.png)
+
+It turns out that rather than taking this little triangle and computing the height over the width, you can get a much better estimate of the gradient if you take this point, f of theta minus epsilon and this point, f of theta plus epsilon, and you instead compute the height over width of this bigger triangle. 
+
+![alt text](_assets/heightOverWidth.png)
+
+The height over width of this bigger green triangle gives you a much better approximation to the derivative at theta. 
+
+![alt text](_assets/heightOverWidth2.png)
+
+Taking just this lower triangle in the upper right is as if you have two triangles. This one on the upper right and this one on the lower left. 
+
+![alt text](_assets/2triangles.png)
+
+And you're kind of taking both of them into account by using this bigger green triangle. So rather than a one sided difference, you're taking a two sided difference.
+
+![alt text](_assets/biggerTriangle.png)
+
+This point here is F of theta plus epsilon. This point here is F of theta minus epsilon. So the height of this big green triangle is f of theta plus epsilon minus f of theta minus epsilon. And then the width, this is 1 epsilon, this is 2 epsilon. So the width of this green triangle is 2 epsilon. So the height of the width is going to be first the height, so that's F of theta plus epsilon minus F of theta minus epsilon divided by the width. So that was 2 epsilon which we write that down here. 
+
+![alt text](_assets/Math.png)
+
+![alt text](_assets/Math2.png)
+
+Plug in the values, remember f of theta is theta cubed. So this is theta plus epsilon is 1.01. So I take a cube of that minus 0.99 theta cube of that divided by 2 times 0.01. You should get that this is 3.0001.
+
+![alt text](_assets/Math3.png)
+
+## Gradient Checking
+Take $W^{[1]}, b^{[1]}, ..., W^{[L]}, b^{[L]}$ and reshape into a big vector $\theta$.
+
+What you should do is take W which is a matrix, and reshape it into a vector. You gotta take all of these Ws and reshape them into vectors, and then concatenate all of these things, so that you have a giant vector theta. Giant vector pronounced as $\theta$. 
+
+We say that the cos function J being a function of the Ws and Bs, You would now have the cost function J being just a function of theta.
+
+![alt text](_assets/JofTheta.png)
+
+Take $dW^{[1]}, db^{[1]}, ..., dW^{[L]}, db^{[L]}$ and reshape into a big vector $d\theta$.
+
+Same as before, we shape dW[1] into the matrix, db[1] is already a vector. We shape dW[L], all of the dW's which are matrices. Remember, dW1 has the same dimension as W1. db1 has the same dimension as b1. So the same sort of reshaping and concatenation operation, you can then reshape all of these derivatives into a giant vector d theta. Which has the same dimension as theta. 
+
+Is $d\theta$ is gradient (or slope) of cost function J?
+
+First we remember that J Is now a function of the giant parameter, theta. So expands to j is a function of theta 1, theta 2, theta 3, and so on. Whatever's the dimension of this giant parameter vector theta. To implement grad check, what you're going to do is implements a loop so that for each i, so for each component of theta, let's compute D theta approx i to b. And let me take a two sided difference. I'll take J of theta. Theta 1, theta 2, up to theta i. And we're going to nudge theta i to add epsilon to this. So just increase theta i by epsilon, and keep everything else the same. And because we're taking a two sided difference, we're going to do the same on the other side with theta i, but now minus epsilon. And then all of the other elements of theta are left alone. And then we'll take this, and we'll divide it by 2 theta.
+
+![alt text](_assets/GradCheck.png)
+
+What we saw from the previous video is that this should be approximately equal to d theta i. Of which is supposed to be the partial derivative of J or of respect to, I guess theta i, if d theta i is the derivative of the cost function J. So what you going to do is you're going to compute to this for every value of i. And at the end, you now end up with two vectors. You end up with this d theta approx, and this is going to be the same dimension as d theta. And both of these are in turn the same dimension as theta. And what you want to do is check if these vectors are approximately equal to each other.
+
+![alt text](_assets/GradCheck2.png)
+
+I would compute the distance between these two vectors, d theta approx minus d theta, so just the o2 norm of this. Notice there's no square on top, so this is the sum of squares of elements of the differences, and then you take a square root, as you get the Euclidean distance. And then just to normalize by the lengths of these vectors, divide by d theta approx plus d theta. Just take the Euclidean lengths of these vectors. 
+
+![alt text](_assets/GradCheck3.png)
+
+And the row for the denominator is just in case any of these vectors are really small or really large, your the denominator turns this formula into a ratio. 
+
+In practice, I use epsilon equals maybe 10 to the minus 7. And with this range of epsilon, if you find that this formula gives you a value like 10 to the minus 7 or smaller, then that's great. It means that your derivative approximation is very likely correct. This is just a very small value. If it's maybe on the range of 10 to the -5, I would take a careful look. Maybe this is okay. But I might double-check the components of this vector, and make sure that none of the components are too large. And if some of the components of this difference are very large, then maybe you have a bug somewhere. And if this formula on the left is on the other is -3, then I would wherever you have would be much more concerned that maybe there's a bug somewhere. But you should really be getting values much smaller then 10 minus 3. If any bigger than 10 to minus 3, then I would be quite concerned. I would be seriously worried that there might be a bug. And I would then, you should then look at the individual components of data to see if there's a specific value of i for which d theta across i is very different from d theta i. And use that to try to track down whether or not some of your derivative computations might be incorrect. 
+
+![alt text](_assets/GradCheck4.png)
+
+And after some amounts of debugging, it finally, it ends up being this kind of very small value, then you probably have a correct implementation. 
+
+So when implementing a neural network, what often happens is I'll implement foreprop, implement backprop. And then I might find that this grad check has a relatively big value. And then I will suspect that there must be a bug, go in debug, debug, debug. And after debugging for a while, If I find that it passes grad check with a small value, then you can be much more confident that it's then correct.
+
+You already wrote a neural network that does:
+1. Forward propagation → computes the cost J($\theta$)
+2. Backward propagation → computes the gradients ${dJ} \over {d\theta}$
+
+Here 𝜃 (“theta”) is the vector of all your parameters (weights & biases).
+
+Now, we want to check if the backprop gradients are correct.
+
+Backprop computes derivatives using the chain rule — fast but complex.
+
+But we can also approximate derivatives using basic calculus:
+
+![alt text](_assets/ApproxDerivative.png)
+
+That’s called the numerical gradient.
+* 𝜀 (epsilon) is a tiny number (like $10^{-7}$)
+* You move a little bit forward and backward along one parameter, measure how the cost changes, and estimate the slope.
+
+Imagine your cost function (loss) depends on only one weight w:
+
+$J(w) = w^{2}$
+
+You know the true gradient is: ${{dJ} \over {dw}}=2w$
+
+Pick w = 3 and epsilon - 0.001.
+
+$NumericalGradient \approx {{J(3+0.001) - J(3-0.001)} \over {2*0.001}}$
+
+![alt text](_assets/ComputeStepByStep.png)
+
+Theoretical gradient = 2*3 = 6.
+
+In a real neural network, you have many parameters:
+
+$\theta = [W_1,b_1,...,W_L,b_L]$
+
+1. Flatten all parameters into a single vector theta.
+2. Flatten all gradients (computed by backprop) into a single vector grad.
+3. Then for each parameter i in theta:
+  * Compute $J(\theta^+) = J(\theta + \epsilon e_i)$
+  * Compute $J(\theta^-) = J(\theta - \epsilon e_i)$
+  * Approximate derivative:
+      ![alt text](_assets/ApproxDerivative2.png)
+4. Compare dtheta_num (numerical gradients) with grad (backprop gradients).
+
+You can’t expect exact equality (floating-point precision),
+so you compute the difference ratio:
+
+![alt text](_assets/difference.png)
+
+If:
+* difference < 1e-7 → ✅ Your backprop is correct
+* difference ≈ 1e-5 to 1e-7 → ⚠️ Maybe okay
+* difference > 1e-4 → ❌ You probably have a bug
+
+![alt text](_assets/Example.png)
+
+1. Don’t use dropout while checking gradients
+  → Dropout adds randomness, so you’ll never get matching results.
+1. Don’t use gradient checking every iteration
+  → It’s slow. Just use it once after implementing backprop to confirm correctness.
+1. Always reset ε small (like 1e−7)
+  → If too large, approximation is bad; if too small, round-off errors dominate.
+1. Turn off regularization or include it properly in J
+  → If you regularize weights, include that in both the forward and numerical cost.
+
+## Gradient Checking Implementation Notes
+
+* Don’t use in training – only to debug
+
+Computing $d \theta _{approx}[i]$, this is a very slow computation. So to implement gradient descent, you'd use backprop to compute d theta and just use backprop to compute the derivative. And it's only when you're debugging that you would compute this to make sure it's close to d theta. But once you've done that, then you would turn off the grad check, and don't run this during every iteration of gradient descent, because that's just much too slow. 
+
+* If algorithm fails grad check, look at components to try to identify bug.
+
+If $d \theta _{approx}[i]$ is very far from $d \theta$, what I would do is look at the different values of i to see which are the values of $d \theta _{approx}[i]$ that are really very different than the values of d theta. So for example, if you find that the values of theta or d theta, they're very far off, all correspond to $db^{[l]}$ for some layer or for some layers, but the components for $dw^{[l]}$ are quite close. Remember, different components of theta correspond to different components of b and w. When you find this is the case, then maybe you find that the bug is in how you're computing db, the derivative with respect to parameters b. And similarly, vice versa, if you find that the values that are very far, the values from $d \theta _{approx}[i]$ that are very far from d theta, you find all those components came from dw or from dw in a certain layer, then that might help you hone in on the location of the bug. This doesn't always let you identify the bug right away, but sometimes it helps you give you some guesses about where to track down the bug.
+
+* Remember regularization.
+
+If your cost function is J of theta equals 1 over m sum of your losses and then plus this regularization term. And sum over l of wl squared, then this is the definition of J. And you should have that d theta is gradient of J with respect to theta, including this regularization term. So just remember to include that term. 
+
+![alt text](_assets/Regularization2.png)
+
+* Grad check doesn’t work with dropout.
+
+Because in every iteration, dropout is randomly eliminating different subsets of the hidden units. There isn't an easy to compute cost function J that dropout is doing gradient descent on. It turns out that dropout can be viewed as optimizing some cost function J, but it's cost function J defined by summing over all exponentially large subsets of nodes they could eliminate in any iteration. So the cost function J is very difficult to compute, and you're just sampling the cost function every time you eliminate different random subsets in those we use dropout. So it's difficult to use grad check to double check your computation with dropouts. So what I usually do is implement grad check without dropout. So if you want, you can set keep_prop and dropout to be equal to 1.0. And then turn on dropout and hope that my implementation of dropout was correct.
+
+So my recommendation is turn off dropout, use grad check to double check that your algorithm is at least correct without dropout, and then turn on dropout.
+
+* Run at random initialization; perhaps again after some training.
+
+Finally, this is a subtlety. It is not impossible, rarely happens, but it's not impossible that your implementation of gradient descent is correct when w and b are close to 0, so at random initialization. But that as you run gradient descent and w and b become bigger, maybe your implementation of backprop is correct only when w and b is close to 0, but it gets more inaccurate when w and b become large. So one thing you could do, I don't do this very often, but one thing you could do is run grad check at random initialization and then train the network for a while so that w and b have some time to wander away from 0, from your small random initial values. And then run grad check again after you've trained for some number of iterations.
 
