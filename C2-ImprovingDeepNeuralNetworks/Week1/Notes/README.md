@@ -11,6 +11,25 @@
 * Apply zeros initialization, random initialization, and He initialization
 * Apply regularization to a deep learning model
 
+- [Practical Aspects of Deep Learning](#practical-aspects-of-deep-learning)
+  - [Train / Dev / Test sets](#train--dev--test-sets)
+  - [Bias / Variance](#bias--variance)
+  - [Basic Recipe for Machine Learning](#basic-recipe-for-machine-learning)
+  - [Regularization](#regularization)
+  - [Why Regularization Reduces Overfitting?](#why-regularization-reduces-overfitting)
+  - [Dropout Regularization](#dropout-regularization)
+    - [Implement dropout ("Inverted dropout")](#implement-dropout-inverted-dropout)
+    - [Making predictions at test time](#making-predictions-at-test-time)
+      - [Why divide by keep\_prob? (the expectation argument)](#why-divide-by-keep_prob-the-expectation-argument)
+  - [Understanding Dropout](#understanding-dropout)
+  - [Other Regularization Methods](#other-regularization-methods)
+  - [Normalizing Inputs](#normalizing-inputs)
+  - [Vanishing / Exploding Gradients](#vanishing--exploding-gradients)
+  - [Weight Initialization for Deep Networks](#weight-initialization-for-deep-networks)
+  - [Numerical Approximation of Gradients](#numerical-approximation-of-gradients)
+  - [Gradient Checking](#gradient-checking)
+  - [Gradient Checking Implementation Notes](#gradient-checking-implementation-notes)
+
 ## Train / Dev / Test sets
 When training NN, there is a lot of decisions to make:
 * Number of layers
@@ -247,13 +266,34 @@ Meaning:
 |Low Bias, Low Variance|	Low|	Low|	Ideal	|Great generalization|
 
 ## Basic Recipe for Machine Learning
-After having trained in an initial model, I will first ask, does your algorithm have high bias? And so, to try and evaluate if there is high bias, you should look at, really, the training set or the training data performance. And so, if it does have high bias, does not even fitting in the training set that well, some things you could try would be to try pick a network, such as more hidden layers or more hidden units, or you could train it longer, you know, maybe run trains longer or try some more advanced optimization algorithms, or maybe find a new NN architecture that's better suited for this problem (this maybe works, maybe not). Getting a bigger networks almost always helps. Training longer doesn't always help, but it doesn't hurt. Keep doing this until we get rid of high bias problem.
+After having trained in an initial model, I will first ask, does your algorithm have high bias? And so, to try and evaluate if there is high bias, you should look at, the training set or the training data performance. And so, if it does have high bias, does not even fitting in the training set that well, some things you could try would be to try pick a network:
+* More hidden layers or more hidden units.
+* Or you could train it longer, maybe run trains longer.
+* Try some more advanced optimization algorithms.
+* Maybe find a new NN architecture that's better suited for this problem (this maybe works, maybe not). Getting a bigger networks almost always helps. 
+* Training longer doesn't always help, but it doesn't hurt. Keep doing this until we get rid of high bias problem.
 
 Usually, if you have a big enough network, you should usually be able to fit the training data well, so long as it's a problem that is possible for someone to do, alright? If the image is very blurry, it may be impossible to fit it, but if at least a human can do well on the task, if you think Bayes error is not too high, then by training a big enough network you should be able to, hopefully, do well, at least on the training set, to at least fit or overfit the training set. 
 
 Once you've reduce bias to acceptable amounts, I will then ask, do you have a variance problem? And so to evaluate that I would look at dev set performance. Are you able to generalize, from a pretty good training set performance, to having a pretty good dev set performance? 
 
-And if you have high variance, well, best way to solve a high variance problem is to get more data, if you can get it, this, you know, can only help. But sometimes you can't get more data. Or, you could try regularization, to try to reduce overfitting. And then also, again, sometimes you just have to try it. But if you can find a more appropriate neural network architecture, sometimes that can reduce your variance problem as well, as well as reduce your bias problem. But how to do that? It's harder to be totally systematic how you do that. 
+And if you have high variance:
+* Best way to solve a high variance problem is to get more data.
+* But sometimes you can't get more data, you could try regularization, to try to reduce overfitting.
+* If you can find a more appropriate neural network architecture, sometimes that can reduce your variance problem as well, as well as reduce your bias problem. 
+
+When Andrew said:
+
+“Changing the architecture of your model can help improve variance,”
+
+He didn’t mean to make the network bigger or deeper — he meant adjusting the architecture in a way that reduces overfitting. So, he was referring to reducing variance by simplifying or regularizing the model.
+
+That could mean:
+* Making the network smaller (fewer layers or units),
+* Adding dropout,
+* Adding L2 regularization,
+* Using batch normalization,
+* Or using data augmentation.
 
 I try these things and I kind of keep going back, until, hopefully, you find something with both low bias and low variance, whereupon you would be done. 
 
@@ -633,6 +673,20 @@ So as you somewhat less often in other application areas, there's just a compute
 One big downside of drop out is that the cost function J is no longer well defined on every iteration. You're randomly, calling off a bunch of notes. And so if you are double checking the performance of gradient descent is actually harder to double check that you have a well defined cost function J that is going downhill on every iteration. Because the cost function J that you're going to optimizing is actually less well defined and it's certainly hard to calculate. So you lose this debugging tool to have a plot a draft like this. So what I usually do is turn off drop out or if you will set keep-prop = 1 and run my code and make sure that it is monitored quickly decreasing J. And then turn on drop out and hope that, I didn't introduce bug to my code during drop out because you need other ways, I guess, but not plotting these figures to make sure that your code is working, the gradient descent is working even with drop out. 
 
 ![alt text](_assets/CostJ.png)
+
+**Increasing keep_prob (e.g. from 0.5 → 0.6):**
+* Keeps more neurons active
+* Makes dropout weaker (less regularization)
+* May cause higher variance (model could overfit more)
+* Slightly reduces bias (model fits training set better)
+
+|Keep_prob|	Regularization strength|	Effect|
+|-|-|-|
+|Low (e.g. 0.3–0.5)|	Strong regularization|	Helps prevent overfitting (reduces variance), but may underfit (higher bias)|
+|High (e.g. 0.6–0.9)|	Weak regularization|	Less dropout noise → model fits training data better (lower bias), but might overfit (higher variance)|
+
+* Smaller keep_prob = stronger dropout (more neurons turned off)
+* Larger keep_prob = weaker dropout (fewer neurons turned off)
 
 ## Other Regularization Methods
 
