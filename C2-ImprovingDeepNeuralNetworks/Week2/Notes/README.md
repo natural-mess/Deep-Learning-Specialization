@@ -5,6 +5,37 @@
 * Use random minibatches to accelerate convergence and improve optimization
 * Describe the benefits of learning rate decay and apply it to your optimization
 
+- [Optimization Algorithms](#optimization-algorithms)
+  - [Mini-batch Gradient Descent](#mini-batch-gradient-descent)
+    - [Implement Mini-batch gradient descent](#implement-mini-batch-gradient-descent)
+  - [Understanding Mini-batch Gradient Descent](#understanding-mini-batch-gradient-descent)
+    - [Training with mini batch gradient descent](#training-with-mini-batch-gradient-descent)
+    - [Choosing your mini-batch size](#choosing-your-mini-batch-size)
+    - [Choosing your mini-batch size](#choosing-your-mini-batch-size-1)
+  - [Exponentially Weighted Averages](#exponentially-weighted-averages)
+    - [Temperature in London](#temperature-in-london)
+  - [Exponentially weighted averages](#exponentially-weighted-averages-1)
+  - [Understanding Exponentially Weighted Averages](#understanding-exponentially-weighted-averages)
+    - [Exponentially weighted averages](#exponentially-weighted-averages-2)
+    - [Implementing exponentially weighted averages](#implementing-exponentially-weighted-averages)
+    - [ChatGPT](#chatgpt)
+  - [Bias Correction in Exponentially Weighted Averages](#bias-correction-in-exponentially-weighted-averages)
+    - [Bias correction](#bias-correction)
+    - [Another explanation](#another-explanation)
+  - [Gradient Descent with Momentum](#gradient-descent-with-momentum)
+    - [Gradient descent example](#gradient-descent-example)
+    - [Implementation details](#implementation-details)
+  - [RMSprop](#rmsprop)
+  - [Adam Optimization Algorithm](#adam-optimization-algorithm)
+    - [Adam optimization algorithm](#adam-optimization-algorithm-1)
+    - [Hyperparameters choice](#hyperparameters-choice)
+    - [Where does the term Adam come from?](#where-does-the-term-adam-come-from)
+  - [Learning Rate Decay](#learning-rate-decay)
+    - [Learning rate decay](#learning-rate-decay-1)
+    - [Other learning rate decay methods](#other-learning-rate-decay-methods)
+  - [The Problem of Local Optima](#the-problem-of-local-optima)
+
+
 ## Mini-batch Gradient Descent
 Vectorization allows you to efficiently compute on m examples.
 
@@ -500,7 +531,7 @@ In practice, people don't usually do this because after just ten iterations, you
 
 Of course, this process initialize the $v_{dW}$ equals 0. Note that this is a matrix of zeroes with the same dimension as dW, which has the same dimension as W.
 
-v_{db}$ is also initialized to a vector of zeroes. So, the same dimension as db, which in turn has same dimension as b.
+$v_{db}$ is also initialized to a vector of zeroes. So, the same dimension as db, which in turn has same dimension as b.
 
 Finally, I just want to mention that if you read the literature on gradient descent with momentum often you see it with this $1 - \beta$ term omitted. So you end up with $v_{dW}=\beta v_{dW} + dW$.
 
