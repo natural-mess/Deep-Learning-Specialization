@@ -31,3 +31,9 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C2-ImprovingDeepNeuralNetworks/Week1/Notes/)
 * [Quiz](./C2-ImprovingDeepNeuralNetworks/Week1/Quiz/)
 * [Assignments](./C2-ImprovingDeepNeuralNetworks/Week1/Assignments/)
+
+### Week 2: Optimization Algorithms
+* [Slides](./C2-ImprovingDeepNeuralNetworks/Week2/Slides/)
+* [Notes](./C2-ImprovingDeepNeuralNetworks/Week2/Notes/)
+* [Quiz](./C2-ImprovingDeepNeuralNetworks/Week2/Quiz/)
+* [Assignments](./C2-ImprovingDeepNeuralNetworks/Week2/Assignments/)
