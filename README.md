@@ -37,3 +37,9 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C2-ImprovingDeepNeuralNetworks/Week2/Notes/)
 * [Quiz](./C2-ImprovingDeepNeuralNetworks/Week2/Quiz/)
 * [Assignments](./C2-ImprovingDeepNeuralNetworks/Week2/Assignments/)
+
+### Week 3: Hyperparameter Tuning, Batch Normalization and Programming Frameworks
+* [Slides](./C2-ImprovingDeepNeuralNetworks/Week3/Slides/)
+* [Notes](./C2-ImprovingDeepNeuralNetworks/Week3/Notes/)
+* [Quiz](./C2-ImprovingDeepNeuralNetworks/Week3/Quiz/)
+* [Assignments](./C2-ImprovingDeepNeuralNetworks/Week3/Assignments/)
