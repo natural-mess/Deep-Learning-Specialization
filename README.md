@@ -49,4 +49,9 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Slides](./C3-StructuringMachineLearningProjects/Week1/Slides)
 * [Notes](./C3-StructuringMachineLearningProjects/Week1/Notes)
 * [Quiz](./C3-StructuringMachineLearningProjects/Week1/Quiz)
-* [Assignments](./C3-StructuringMachineLearningProjects/Week1/Assignments)
+
+### Week 2: ML Strategy
+* [Slides](./C3-StructuringMachineLearningProjects/Week2/Slides)
+* [Notes](./C3-StructuringMachineLearningProjects/Week2/Notes)
+* [Quiz](./C3-StructuringMachineLearningProjects/Week2/Quiz)
+
