@@ -269,6 +269,43 @@ To summarize, if there are multiple things you care about by say there's one as 
 
 Now these evaluation metrics must be evaluated or calculated on a training set or a development set or maybe on the test set. So one of the things you also need to do is set up training, dev or development, as well as test sets. 
 
+When designing your evaluation metric (cost function or performance measure), you often have multiple objectives.
+
+But in practice, you usually:
+* Optimize one metric — make it as good as possible.
+* Satisfice others — make sure they meet some acceptable threshold.
+
+That’s why we call them:
+* Optimizing metric: the main thing you’re trying to make great.
+* Satisficing metric(s): the things you just want “good enough.”
+
+Say your app classifies pictures as “cat” or “not cat.”
+
+You might care about:
+
+| Metric| 	Description	| Type| 
+|-|-|-|
+| Accuracy| 	How often predictions are correct| 	Optimizing| 
+| Latency| 	How fast predictions are made| 	Satisficing| 
+| Memory|  usage	How big the model is| 	Satisficing| 
+
+So:
+* You optimize accuracy — you try to make it as high as possible.
+* You satisfice latency and memory — you just need them under limits (e.g., < 100ms, < 50MB).
+
+If latency goes above 100ms, it fails the satisficing constraint.
+
+Different people (or teams) care about different things:
+
+|Stakeholder	|Priority|	Metric Type|
+|-|-|-|
+|Product manager	|User satisfaction → Accuracy|	Optimizing|
+|Engineering team	|Response speed → Latency	|Satisficing|
+|Mobile developer	|Model size → Memory usage|	Satisficing|
+|Business owner	|Server cost → Compute cost	|Satisficing|
+
+So you decide which one to optimize and which to keep within limits based on what matters most to the end goal of your system.
+
 ## Train/Dev/Test Distributions
 The way you set up your training dev, or development sets and test sets, can have a huge impact on how rapidly you or your team can make progress on building machine learning application. The same teams, even teams in very large companies, set up these data sets in ways that really slows down, rather than speeds up, the progress of the team. 
 ### Cat classification dev/test sets
@@ -557,6 +594,10 @@ In this example, understanding human level error, understanding your estimate of
 
 ## Understanding Human-level Performance
 The term human-level performance is sometimes used casually in research articles. But let me show you how we can define it a bit more precisely. And in particular, use the definition of the phrase, human-level performance, that is most useful for helping you drive progress in your machine learning project.
+
+When Andrew Ng says “human-level performance,” he means:
+
+The accuracy that a well-trained human (not random people!) can achieve on the same task and dataset.
 
 ### Human-level error as a proxy for Bayes error
 So remember from our last video that one of the uses of this phrase, human-level error, is that it gives us a way of estimating Bayes error. What is the best possible error any function could, either now or in the future, ever, ever achieve? 
