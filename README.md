@@ -44,7 +44,7 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Quiz](./C2-ImprovingDeepNeuralNetworks/Week3/Quiz/)
 * [Assignments](./C2-ImprovingDeepNeuralNetworks/Week3/Assignments/)
 
-## [Course 2: Structuring Machine Learning Projects](./C3-StructuringMachineLearningProjects/)
+## [Course 3: Structuring Machine Learning Projects](./C3-StructuringMachineLearningProjects/)
 ### Week 1: ML Strategy
 * [Slides](./C3-StructuringMachineLearningProjects/Week1/Slides)
 * [Notes](./C3-StructuringMachineLearningProjects/Week1/Notes)
@@ -54,4 +54,17 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Slides](./C3-StructuringMachineLearningProjects/Week2/Slides)
 * [Notes](./C3-StructuringMachineLearningProjects/Week2/Notes)
 * [Quiz](./C3-StructuringMachineLearningProjects/Week2/Quiz)
+
+## [Course 4: Convolutional Neural Networks](./C4-ConvolutionalNeuralNetworks/)
+### Week 1: Foundations of Convolutions Neural Networks
+* [Slides](./C4-ConvolutionalNeuralNetworks/Week1/Slides/)
+* [Notes](./C4-ConvolutionalNeuralNetworks/Week1/Notes/)
+* [Quiz](./C4-ConvolutionalNeuralNetworks/Week1/Quiz/)
+* [Assignments](./C4-ConvolutionalNeuralNetworks/Week1/Assignments/)
+
+### Week 2: Deep Convolutional Models: Case Studies
+* [Slides](./C4-ConvolutionalNeuralNetworks/Week2/Slides/)
+* [Notes](./C4-ConvolutionalNeuralNetworks/Week2/Notes/)
+* [Quiz](./C4-ConvolutionalNeuralNetworks/Week2/Quiz/)
+* [Assignments](./C4-ConvolutionalNeuralNetworks/Week2/Assignments/)
 
