@@ -9,6 +9,46 @@
 * Adapt a pretrained model to new data and train a classifier using the Functional API and MobileNet
 * Fine-tine a classifier's final layers to improve accuracy
 
+- [Week 2: Deep Convolutional Models: Case Studies](#week-2-deep-convolutional-models-case-studies)
+  - [Why look at case studies?](#why-look-at-case-studies)
+  - [Classic Networks](#classic-networks)
+    - [LeNet-5 Architecture (1998)](#lenet-5-architecture-1998)
+    - [AlexNet Architecture (2012)](#alexnet-architecture-2012)
+    - [VGG-16 Architecture (2014)](#vgg-16-architecture-2014)
+  - [ResNets](#resnets)
+  - [Why ResNets Work?](#why-resnets-work)
+    - [Why do residual networks work?](#why-do-residual-networks-work)
+    - [ResNets](#resnets-1)
+  - [Networks in Networks and 1x1 Convolutions](#networks-in-networks-and-1x1-convolutions)
+  - [Inception Network Motivation](#inception-network-motivation)
+    - [The problem of computational cost](#the-problem-of-computational-cost)
+    - [Using 1×1 convolution](#using-11-convolution)
+  - [Inception Network](#inception-network)
+    - [Inception module](#inception-module)
+    - [Inception network](#inception-network-1)
+  - [MobileNet](#mobilenet)
+    - [Motivation for MobileNets](#motivation-for-mobilenets)
+    - [Normal Convolution](#normal-convolution)
+    - [Depthwise Separable Convolution](#depthwise-separable-convolution)
+    - [Example](#example)
+  - [MobileNet Architecture](#mobilenet-architecture)
+    - [MobileNet v1](#mobilenet-v1)
+    - [MobileNet v2](#mobilenet-v2)
+      - [Example MobileNet v2 Bottleneck Block](#example-mobilenet-v2-bottleneck-block)
+      - [Why Bottleneck?](#why-bottleneck)
+      - [Residual connection](#residual-connection)
+      - [Visualizing MobileNet v2 Block](#visualizing-mobilenet-v2-block)
+      - [Why bottleneck + residual?](#why-bottleneck--residual)
+  - [EfficientNet](#efficientnet)
+  - [Using Open-Source Implementation](#using-open-source-implementation)
+  - [Transfer Learning](#transfer-learning)
+  - [Data augmentation](#data-augmentation)
+  - [The state of computer vision](#the-state-of-computer-vision)
+    - [Data vs. hand-engineering](#data-vs-hand-engineering)
+    - [Tips for doing well on benchmarks/winning competitions](#tips-for-doing-well-on-benchmarkswinning-competitions)
+    - [Use open source code](#use-open-source-code)
+
+
 ## Why look at case studies?
 The primary purpose of studying case studies is to gain intuition on how to build effective convolutional neural networks.
 * Combining Building Blocks: You learned the basic components: convolutional layers, pooling layers, and fully connected layers. A significant part of recent computer vision research has focused on how to put these basic building blocks together to form effective architectures.
@@ -445,18 +485,965 @@ It turns out that so long as you implement this bottleneck layer so that within 
 
 ## Inception Network
 ### Inception module
+* Branch 1: 1×1 Convolution
+  * Purpose: capture fine details
+  * Also helps keep the depth lower
+  * Very cheap to compute
+
+Output example: 28×28×64
+
+* Branch 2: 1×1 → 3×3 Convolution
+  * The 1×1 layer reduces number of channels → reduces cost
+  * The 3×3 filter captures medium-sized patterns
+  * Uses SAME padding → output has same width/height
+
+Output example: 28×28×128
+
+* Branch 3: 1×1 → 5×5 Convolution
+  * Again, 1×1 reduces channels first
+  * The 5×5 filter detects large, more global patterns
+  * Without the 1×1, 5×5 would be extremely expensive
+
+Output example: 28×28×32
+
+* Branch 4: Pooling → 1×1 Convolution
+  * Usually uses 3×3 max pooling
+  * Pooling gives invariance, reduces sensitivity to small shifts
+  * The following 1×1 convolution reduces depth
+  * Pooling alone would shrink features — 1×1 restores useful information
+
+Output example: 28×28×32
+
+After each branch produces its output, the results are concatenated depth-wise:
+
+Output depth=64+128+32+32=256
+
+So if input was 28×28×192, output might be 28×28×256.
+
+This creates a rich, multi-scale feature map:
+* small filters (1×1)
+* medium filters (3×3)
+* large filters (5×5)
+* pooled features
+
+All fused together.
+
 * Input: Previous Activation 28x28x192
   * 1x1 CONV, 16 filters + 5x5 CONV -> 28x28x32
   * 1x1 CONV, 96 filters + 3x3 CONV -> 28x28x128
   * 1x1 CONV -> 28x28x64
   * MAXPOOL 3x3, s=1, same + 1x1 CONV, 32 filters 1x1x192 -> 28x28x32
-* Output: Take all above blocks and do channel concatenation.
+* Output: Take all above blocks and do channel concatenation. Concatenate 64+128+32+32, this gives 28x28x256 output.
 
 ![alt text](_assets/InceptionModule.png)
 
+Why the Inception Module is Powerful
+* No need to choose “which filter size is best” → network learns it
+* Multi-scale feature extraction
+* Much cheaper because of 1×1 reductions
+* Can be stacked to build a deep network without blowing compute
+* Allows very deep models (22 layers in GoogLeNet)
+
+This is why Inception networks were revolutionary.
+
+### Inception network
+Inception network puts a lot of inception modules together.
+
+* Consists of multiple stacked Inception modules
+* Final network has 22 layers deep
+* Uses fewer parameters than VGG (despite being deeper)
+  * VGG: ~138 million parameters
+  * GoogLeNet: ~5 million parameters (!!)
+
+Much smaller yet more accurate.
+
+![alt text](_assets/InceptionNetwork1.png)
+
+Here is a inception block which is an inception module as described above.
+
+Deep networks often face vanishing gradients:
+→ the early layers learn slowly because gradient becomes too small.
+
+GoogLeNet solves this by adding auxiliary classifiers halfway through the network.
+
+These look like small, mini-classifiers that include:
+* average pooling
+* 1×1 conv
+* fully connected layer
+* softmax
+
+They help:
+* provide extra gradient to early layers
+* act like regularization
+* are only used during training
+* removed during inference (testing)
+
+This helps the network train better and more stably.
+
+![alt text](_assets/InceptionNetwork2.png)
+
+## MobileNet
+### Motivation for MobileNets
+* Low computational cost at deployment
+* Useful for mobile and embedded vision applications
+* Key idea: Normal vs. depthwiseseparable convolutions
+
+### Normal Convolution
+Traditional CNNs (like VGG, Inception) are:
+* large
+* slow
+* require a lot of computation
+
+But many real-world applications need:
+* models that run on mobile phones
+* low energy usage
+* low memory
+* fast inference
+
+➡️ MobileNet was designed for mobile and embedded devices.
+It uses a special type of convolution called depthwise separable convolution to dramatically reduce computation.
+
+In a normal convolution layer:
+* Input: H × W × M
+* Filters: N filters, each size K × K × M
+* Output: H × W × N
+
+Each output channel uses a filter that spans ALL input channels.
+
+Cost of standard convolution
+
+$Cost = H*W*M*N*K^2$
+
+This becomes very expensive, especially when M and N are large.
+
+### Depthwise Separable Convolution
+MobileNet breaks normal convolution into two cheaper steps:
+
+* Step 1: Depthwise Convolution
+  * Apply one filter per input channel
+  * Each filter is K×K×1
+  * No mixing of channels
+  * Very cheap
+
+If input has M channels → you use M filters.
+
+$Cost = H*W*M*N*K^2$
+
+* Step 2: Pointwise Convolution (1×1 Convolution)
+  * Uses 1×1×M filters
+  * Mixes information across channels
+  * Produces N output channels
+  * This is where channel mixing occurs
+
+$Cost = H*W*M*N$
+
+Compare Cost: Standard Conv vs Depthwise + Pointwise
+
+Standard convolution cost: $HWMNK^2$
+
+Depthwise separable convolution cost: $HWMK^2 + HWMN$ (depthwise + pointwise)
+
+MobileNet reduces computation by about: ${1 \over {K^2} + {1 \over N}}$
+
+* Depthwise conv learns spatial patterns for each channel.
+* Pointwise conv learns how to combine channels.
+
+Together, they replicate what a normal convolution does, but much more cheaply.
+
+This is the key idea of the MobileNet architecture.
+
+### Example
+Input volume: 6x6x3
+
+Standard convolution:
+* Filter size = 3×3x3
+* Number of filter = 5
+* Output = 4x4x5
+
+Output size = 6-3+1 = 4
+
+* Output positions: 4×4=16
+* Operations per filter per position: 3×3×3=27
+* Number of filters: 5
+
+Total cost: 16×27×5=2160 multiplications
+
+![alt text](_assets/NormalConvolution.png)
+
+Depthwise separable convolution =
+depthwise convolution + pointwise convolution
+
+![alt text](_assets/DepthwiseSeparableConvo.png)
+
+Depthwise means:
+* 1 filter per channel
+* Each filter: 3×3×1
+* So you have 3 depthwise filters
+
+Output: 4x4x3
+* Positions: 16
+* Per-channel filter: 9
+* Channels: 3
+
+Cost = (4x4)x(3x3x1)x3=432 multiplications
+
+![alt text](_assets/DepthwiseConv.png)
+
+![alt text](_assets/DepthwiseSeparableConvo2.png)
+
+Pointwise Convolution
+
+Input from depthwise: 4×4×3
+
+We want the final output to be: 4×4×5
+
+So we need:
+* 5 pointwise (1×1×3) filters
+* Each produces 1 output channel
+
+Cost: (4×4)×(1×1×3)×5
+
+Break it down:
+* Positions: 16
+* Per 1×1 filter: 3
+* Number of filters: 5
+
+16×3×5=240
+
+Pointwise conv uses 240 multiplications
+
+![alt text](_assets/PointwiseConvo.png)
+
+![alt text](_assets/DepthwiseSeparableConvo3.png)
 
 
+Cost of normal convolution: 2160
 
+Cost of depthwise separable convolution:
+
+Depthwise + Pointwise = 432 + 240 = 672
+
+-> ${672 \over 2160} = 0.31$
+
+MobileNet is 3.2× more efficient in this example
+
+Cost can also be calculated by:
+
+${1 \over {N_C'}} + {1 \over {f^2}}$
+
+So ${1 \over 5} + {1 \over 9} = 0.311$
+
+Depthwise convolution uses 31% of the cost
+
+In real network:
+
+So ${1 \over 512} + {1 \over 9} = 0.113$
+
+Depthwise separable conv uses 11.3% of the cost.
+
+so 1/512 is tiny and 1/9 is small, sum is about 1/9 meams:
+
+Depthwise conv is about 9× more efficient
+
+![alt text](_assets/CostSummary.png)
+
+![alt text](_assets/DepthwiseSeparableConvo4.png)
+
+## MobileNet Architecture
+### MobileNet v1
+
+MobileNet v1 uses depthwise separable convolution everywhere.
+
+Structure
+
+The v1 architecture:
+* Starts with one normal conv layer
+* Then repeats the MobileNet block 13 times
+
+Each block consists of:
+* Depthwise 3×3 convolution → handles spatial filtering per channel
+* Pointwise 1×1 convolution → mixes channels and increases depth
+
+This creates a deep but efficient network.
+
+### MobileNet v2
+
+MobileNet v2 improves v1 by introducing:
+
+* A bottleneck block
+* Residual connections
+* Expansion and projection layers
+
+Each v2 block has 3 parts:
+* Expansion layer (1×1 conv)
+* Depthwise convolution (3×3 per channel)
+* Projection layer (1×1 conv)
+
+This block is repeated 17 times in the architecture.
+
+v1 problem:
+
+Depthwise convolution is cheap, but it doesn’t mix channels.
+
+So v2 solves this using a bottleneck design:
+
+* Expansion: Increase channels before depthwise conv. This gives depthwise more channels to extract richer features.
+* Depthwise: Cheap 3×3 spatial filtering — but now on more channels.
+* Projection: Reduce channels back to a narrow output. Helps with efficiency.
+* Residual connection (skip): Only applied when input and output dimensions match.
+
+Residual connections help the model:
+* train deeper networks
+* keep information flowing
+* avoid vanishing gradients
+
+![alt text](_assets/MobileNetv1v2.png)
+
+#### Example MobileNet v2 Bottleneck Block
+Input: n × n × 3
+
+A tensor with:
+* spatial size n×n
+* depth = 3 channels
+
+**STEP 1** — Expansion (1×1 conv)
+
+Use 18 filters, each of size 1×1×3.
+
+This expands:
+
+n×n×3 → n×n×18
+
+Why 18?
+
+* Expansion factor = 6
+* So 3×6=18
+
+Purpose: Give depthwise conv more channels to work with.
+
+**STEP 2** — Depthwise Conv (3×3, one filter per channel)
+
+Apply 18 depthwise filters (one per channel):
+
+n×n×18 → n×n×18
+
+Why unchanged?
+* Depthwise does not change the number of channels
+* Only filters each channel spatially
+
+**STEP 3** — Projection (1×1 conv)
+
+Use 3 filters, each 1×1×18, to shrink channels back to 3:
+
+n×n×18 → n×n×3
+
+Purpose: Reduce computation and restore bottleneck depth.
+
+**STEP 4** Residual / Skip Connection
+
+Because:
+* input = n×n×3
+* output = n×n×3
+
+They match → so a skip connection is added:
+
+Output = Input + Projection Output
+
+This improves training efficiency, stability, and accuracy.
+
+![alt text](_assets/MobileNetv2.png)
+
+![alt text](_assets/MobileNetSummary.png)
+
+#### Why Bottleneck?
+
+The “bottleneck” is the n×n×3 input and output.
+
+Inside the block, the width grows to 18, but ends narrow again.
+
+A bottleneck in deep learning means:
+
+A layer (or block) that has much fewer channels than the rest of the network.
+
+Think of a bottle:
+
+```
+Wide → Narrow → Wide
+```
+
+The narrow part is the bottleneck.
+
+In MobileNet v2:
+
+* Input is n × n × 3 (narrow)
+* Expand to n × n × 18 (wide)
+* Project back to n × n × 3 (narrow again)
+
+So the block is:
+
+```
+narrow → wide → narrow
+```
+
+That's why it’s called a bottleneck block.
+
+Benefits:
+* Keeps computation low
+* Allows useful residual connections
+* Improves representational power
+* Matches v1 cost but improves accuracy significantly
+
+Summary
+* MobileNet v1 = depthwise separable convolution everywhere
+* MobileNet v2 = depthwise conv + bottleneck + expansion + skip
+
+#### Residual connection
+Here's what happens:
+
+1. Input is copied into two paths:
+* Short path (skip)
+* Main computation path
+2. Main path does:
+* expand
+* depthwise conv
+* project
+3. Final output = sum of skip + main path
+
+This helps learning because:
+* The network can easily keep information from the input
+* Gradients flow better
+* Training deeper networks becomes stable
+
+#### Visualizing MobileNet v2 Block
+```mathematica
+Input (n×n×3)
+   │
+   ├─────────────► (Skip connection)
+   │
+   ▼
+[EXPANSION: 1×1, 3 → 18]
+[DEPTHWISE: 3×3, 18 → 18]
+[PROJECTION: 1×1, 18 → 3]
+   │
+   ▼
+Main Path Output (n×n×3)
+
+Final Output = Input + Main Path Output
+```
+
+![alt text](_assets/MobileNetv2Full.png)
+
+#### Why bottleneck + residual?
+Residual connections work best when:
+* Input and output shapes are the same
+* Channels are small so addition is cheap
+
+If MobileNet v2 used big numbers like 1024 channels, the skip would be expensive.
+
+So they used bottlenecks:
+
+```nginx
+narrow → wide → narrow
+↑                     ↑
+Residual connection connects the narrow parts
+```
+
+This makes residuals fast and efficient.
+
+## EfficientNet
+Before EfficientNet, if researchers wanted a more accurate model, they scaled a network in one of three ways:
+
+(A) Make it deeper: (e.g., ResNet-152 → more layers)
+
+![alt text](_assets/DeeperNetwork.png)
+
+(B) Make it wider: (e.g., more channels in each layer)
+
+![alt text](_assets/WiderLayers.png)
+
+(C) Use larger input image resolution: (e.g., 224×224 → 380×380)
+
+![alt text](_assets/HighResolution.png)
+
+But doing only one of these usually:
+* increases computation too much
+* improves accuracy only a little
+* causes imbalanced networks (too wide but not deep, etc.)
+
+So the question is:
+
+What is the best way to scale depth, width, and resolution together?
+
+EfficientNet says:
+
+Instead of scaling depth or width or resolution individually,
+scale all three together using fixed ratios.
+
+This is called the compound scaling rule.
+
+![alt text](_assets/CompoundScaling.png)
+
+EfficientNet uses a parameter ϕ (phi) that controls how much to scale.
+
+For each increase of ϕ:
+* depth is multiplied by α
+* width is multiplied by β
+* resolution is multiplied by γ
+
+So a larger model is:
+
+$depth = \alpha^{\phi}$, $width=\beta^{\phi}$, $resolution=\gamma^{\phi}$
+
+These α, β, γ values are chosen by a small search.
+
+All EfficientNet-B0 to B7 are created by increasing ϕ.
+
+* If you only increase depth
+
+→ network becomes too slow to train \
+→ diminishing returns (gradient issues)
+
+* If you only increase width
+
+→ model becomes too memory heavy \
+→ accuracy increases slowly
+
+* If you only increase resolution
+
+→ early layers require massive computation \
+→ not optimal
+
+EfficientNet finds the right balance so deeper, wider, and bigger images all increase accuracy efficiently.
+
+The base model EfficientNet-B0 is created using:
+* MobileNet-V2 blocks
+* with squeeze-and-excitation (SE) modules
+* then compound scaled up into B1…B7
+
+So the architecture contains:
+
+* Bottlenecks
+
+(From MobileNet v2)
+
+* Depthwise separable convolutions
+
+(cheap convolutions)
+
+* Expansion + Projection
+
+(MobileNet v2 idea)
+
+* Squeeze-and-Excitation block
+
+(tells the network which channels are important)
+
+Then EfficientNet simply:
+
+```
+B0 (small)
+B1
+B2
+B3
+..
+B7 (largest)
+
+Each model = B0 scaled in depth, width, resolution
+```
+
+Simple Analogy
+
+Think of a car engine:
+* “Depth” = length of the engine
+* “Width” = thickness
+* “Resolution” = quality of fuel input
+
+If you improve only one of these, the engine becomes unbalanced.
+
+EfficientNet says:
+
+Improve all engine dimensions at the same time, in the right ratio, and you get much more performance for less cost.
+
+EfficientNet scales depth, width, and resolution together using fixed balanced ratios, producing much more efficient high-accuracy models.
+
+## Using Open-Source Implementation
+Using Open-Source Implementations
+* Many neural networks are complex to replicate due to hyperparameter tuning challenges.
+* Open-source implementations on platforms like GitHub can help * speed up the development process.
+
+Finding and Downloading Code
+* Search for specific architectures (e.g., ResNet) on GitHub to find various implementations.
+* Downloading code is straightforward using commands like `git clone` to copy repositories to your local machine.
+
+Benefits of Open-Source Code
+* Utilizing pre-trained models can save time, especially for networks that require extensive training.
+* Contributing back to the open-source community is encouraged for those who develop their own implementations.
+
+## Transfer Learning
+Transfer learning means:
+
+Using a neural network trained on one task, and applying it to a new but related task.
+
+In CNNs, this works extremely well because early layers detect edges, corners, patterns, which are useful for many tasks.
+
+**USE CASE 1** — Use the pretrained model as a fixed feature extractor
+
+(Freeze all layers, just train a small classifier head.)
+
+This is used when:
+* You have small dataset
+* You want to avoid overfitting
+
+The pretrained model already understands your type of images well
+
+Example (from Andrew):
+
+You want to classify your family cats:
+* Tigger
+* Misty
+* Neither
+
+But you only have a few images of each cat.
+
+So you take a big pretrained model (like ResNet):
+
+```
+INPUT → Pretrained CNN → Feature Vector → Your New Classifier → Prediction
+```
+
+You freeze the CNN. You only train the last logistic/softmax layer.
+
+Why this works:
+
+The pretrained CNN already knows how to detect:
+* fur texture
+* cat ears
+* cat shapes
+* whiskers
+* animal patterns
+
+So your small dataset is enough.
+
+**USE CASE 2** — Fine-tuning (unfreeze some deeper layers)
+
+(Retrain part of the network to specialize it for your new problem.)
+
+This is used when:
+* You have more data (hundreds or thousands)
+* The pretrained model needs some adaptation
+* But you still don’t want to train from scratch
+
+Tigger & Misty example
+
+If you now collect more pictures of:
+* Tigger
+* Misty
+* Neither
+
+then just training the final layer may not be enough.
+
+So Andrew shows:
+
+```
+Freeze early layers (edges, textures)
+Unfreeze later layers (cat-specific features)
+Fine-tune them on your cats
+```
+
+This lets the model learn features that separate Tigger vs Misty.
+
+For example:
+* Tigger’s striping pattern
+* Misty’s face shape
+* Their fur patterns
+* Eye color differences
+
+So now the model becomes an expert in telling your cats apart.
+
+**USE CASE 3** — Use pretrained weights as initialization (train everything)
+
+(Start with pretrained weights, but you train the whole network.)
+
+This is used when:
+* You have a large dataset
+* Your images are different from the original dataset
+* You want maximum accuracy
+
+✔ Cat example
+
+Imagine you now collect thousands of photos of cats:
+* Tigger
+* Misty
+* Neighbor’s cats
+* Outdoor cats
+* Many lighting conditions
+* Many poses
+
+Now you can train the whole model.
+
+But instead of random initialization, use weights from a pretrained model (like ImageNet):
+
+```
+Start with pretrained CNN weights
+Train all layers on your cat dataset
+→ Faster training
+→ Better accuracy
+```
+
+Because:
+* Early layers already detect edges
+* Middle layers detect textures
+* Later layers can adapt fully to your dataset
+
+This is the best approach when you have enough data.
+
+✔ Use Case 1
+
+“Use the pretrained model exactly as it is — just add a small classifier.”
+
+✔ Use Case 2
+
+“Allow the model to adjust its later layers to specialize in your task.”
+
+✔ Use Case 3
+
+“Use pretrained weights as a good starting point, then train everything.”
+
+![alt text](_assets/TransferLearning.png)
+
+## Data augmentation
+Data augmentation artificially increases your dataset by modifying images in ways that don’t change their label.
+
+This reduces overfitting and makes your model more robust.
+
+For example:
+* If you only have 100 pictures of your cat Tigger, using augmentation you can make thousands of variations:
+* flipped
+* cropped
+* color-shifted
+* distorted
+
+But they are all still Tigger.
+
+![alt text](_assets/Mirroring.png)
+
+**Mirroring (Horizontal Flip)**
+
+Flip the image left-to-right.
+
+Example:
+Cat facing left → cat facing right.
+
+For most objects (cats, dogs, cars, etc.), flipping horizontally does not change the identity.
+
+Benefit: Doubles your dataset instantly.
+
+![alt text](_assets/RandomCropping.png)
+
+**Random Cropping**
+
+Randomly take a smaller section (“crop”) of the image.
+
+For example:
+* Original: 256×256
+* Random crop: 224×224 or similar
+
+Force the model to learn that the object can appear:
+* slightly to the left
+* slightly to the right
+* zoomed in a bit
+* off-center
+
+Crop must be large enough so the object is still recognizable.
+
+So you wouldn’t crop only the cat’s ear → the label becomes wrong.
+
+**Color Distortion / Color Augmentation**
+
+Add or subtract a small random value to the R, G, or B channels.
+
+Example:
+* Add +20 to red channel
+* Add +10 to green channel
+* Subtract −5 from blue channel
+
+This simulates:
+* different lighting
+* different cameras
+* different time of day
+
+![alt text](_assets/ColorShifting.png)
+
+**PCA Color Augmentation (advanced)**
+
+This is the same technique used in the original AlexNet paper.
+
+Adjusts colors based on the principal components of the image dataset.
+
+This:
+* preserves natural color correlations
+* adds realistic color variations
+* avoids making images look weird or unnatural
+
+You don’t need to implement PCA augmentation from scratch—use existing libraries.
+
+Data augmentation is usually done while training, not beforehand.
+
+Why?
+
+Because storing millions of augmented images on disk is inefficient.
+
+Instead:
+* A CPU thread loads the raw image
+* It applies augmentation (mirror, crop, color change)
+* Then passes the augmented image to the GPU for training
+
+This happens in parallel, so training is not slowed down.
+
+Think of it as a pipeline:
+
+```
+CPU: load + augment → GPU: train
+CPU: load + augment → GPU: train
+(repeat continuously)
+```
+
+![alt text](_assets/DistortionsDuringTraining.png)
+
+Data augmentation has tuning parameters, such as:
+* Probability of mirroring
+* Amount of color shift
+* Crop sizes
+* PCA variation intensity
+
+Start with standard open-source implementations and default settings.
+
+Because frameworks like PyTorch, TensorFlow, and Keras already implement good defaults.
+
+## The state of computer vision
+### Data vs. hand-engineering
+Two sources of knowledge
+* Labeled data
+* Hand engineered features/network architecture/other components
+
+How well machine learning works depends heavily on how much data you have.
+
+Examples:
+
+* Speech recognition: Huge datasets (thousands of hours) → deep learning works very well.
+* Image classification: Also has huge datasets like ImageNet → deep learning shines.
+* Object detection: Much harder because:
+* You need bounding boxes, not just labels.
+* Labeling bounding boxes is expensive and slow.
+* Datasets are much smaller.
+
+So detection models often struggle due to less training data.
+
+![alt text](_assets/DataVsHand.png)
+
+**Image Recognition (Classification)**
+* “Is there a cat in this image?”
+* “Is this picture a car?”
+
+Requires:
+* One label per image
+
+Data is easier to collect.
+
+**Object Detection**
+
+Requires: Identifying objects AND drawing a bounding box around them
+
+e.g.
+* Find all cars
+* Find all pedestrians
+
+* ind where the dog is located
+
+Bounding boxes require:
+* Much more human labor
+* More detailed annotation
+* Fewer datasets available
+
+Thus, recognition is easier and better-performing than detection.
+
+* When you have a lot of data → use straightforward deep learning.
+* When you have little data → you must hand-engineer more.
+
+When data is abundant
+* You don’t need fancy tricks.
+* Deep learning learns the features by itself.
+
+When data is scarce, you must help the system by:
+* Designing features
+* Choosing clever architectures
+* Carefully tuning hyperparameters
+* Using augmentation
+* Building structural knowledge into the model
+
+This is why:
+* Classification (lots of data) → very little hand-engineering
+* Detection (less data) → much more architecture design
+
+Examples of “hand-engineering” Andrew refers to:
+
+Designing anchor boxes
+* Multi-scale detection
+* Hard-negative mining
+* Feature pyramids
+* Architecture like YOLO, SSD, Faster R-CNN
+
+All these exist because detection has limited data.
+
+### Tips for doing well on benchmarks/winning competitions
+Ensembling
+* Train several networks independently and average their outputs
+
+Train multiple models → average their predictions → higher accuracy.
+
+Ensembling reduces variance and often gives:
+* Better results on ImageNet
+* Higher leaderboard scores
+
+But: Ensembling is almost never used in production because:
+* It increases computational cost
+* It increases memory usage
+* It slows down prediction
+
+So it is mostly a benchmark trick, not a practical technique.
+
+Multi-crop at test time
+* Run classifier on multiple versions of test images and average results
+
+At test time, instead of using one image:
+* Take multiple crops of the same image (top-left, center, bottom-right, etc.)
+* Run each crop through the network
+* Average the predictions
+
+Result: Higher accuracy on benchmarks.
+
+But just like ensembling:
+* It slows down inference
+* It’s not practical for real-time systems
+* Usually only used for publishing a high accuracy number
+
+![alt text](_assets/TipsBenchmarks.png)
+
+The amount of available data determines how much “hand-engineering” is needed.
+
+* Tasks with lots of data → simple models, less engineering
+* Tasks with less data → complex architectures, more engineering
+
+This is why:
+* Classification (huge datasets) → simple models like ResNet, EfficientNet
+* Detection (smaller datasets) → complex models like Faster R-CNN, SSD, YOLO
+
+And why benchmark tricks (ensembling, multi-crop) look impressive but are rarely used in real products.
+
+### Use open source code
+* Use architectures of networks published in the literature
+* Use pretrained models and fine-tune on your dataset
+* Use open source implementations if possible
 
 
 
