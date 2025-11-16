@@ -68,3 +68,8 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Quiz](./C4-ConvolutionalNeuralNetworks/Week2/Quiz/)
 * [Assignments](./C4-ConvolutionalNeuralNetworks/Week2/Assignments/)
 
+### Week 3: Object Detection
+* [Slides](./C4-ConvolutionalNeuralNetworks/Week3/Slides/)
+* [Notes](./C4-ConvolutionalNeuralNetworks/Week3/Notes/)
+* [Quiz](./C4-ConvolutionalNeuralNetworks/Week3/Quiz/)
+* [Assignments](./C4-ConvolutionalNeuralNetworks/Week3/Assignments/)
