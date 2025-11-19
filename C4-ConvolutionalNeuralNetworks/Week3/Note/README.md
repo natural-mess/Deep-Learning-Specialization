@@ -847,6 +847,270 @@ Finally, how do you choose the anchor boxes?
 
 People used to just choose them by hand or choose maybe 5 or 10 anchor box shapes that spans a variety of shapes that seems to cover the types of objects you seem to detect. As a much more advanced version, just in the advance common for those of who have other knowledge in machine learning, and even better way to do this in one of the later YOLO research papers, is to use a K-means algorithm, to group together two types of objects shapes you tend to get and then to use that to select a set of anchor boxes that this most stereotypically representative of the maybe multiple, of the maybe dozens of object classes you're trying to detect. But that's a more advanced way to automatically choose the anchor boxes. If you just choose by hand a variety of shapes that reasonably expands the set of object shapes, you expect to detect some tall, skinny ones, some fat, white ones. That should work with these as well.
 
+## YOLO Algorithm
+### Training
+Suppose you're trying to train an algorithm to detect three objects: pedestrians, cars, and motorcycles. And you will need to explicitly have the full background class, so just the class labels here.
+
+![alt text](_assets/TrainingYolo.png)
+
+If you're using two anchor boxes, then the outputs y will be three by three because you are using three by three grid cell, by two, this is the number of anchors, by eight because that's the dimension of this. Eight is actually five which is plus the number of classes. Five because you have Pc and then the bounding boxes, that's five, and then C1, C2, C3. That dimension is equal to the number of classes.
+
+You can either view this as three by three by two by eight, or by three by three by sixteen.
+
+![alt text](_assets/TrainingDimension.png)
+
+To construct the training set, you go through each of these nine grid cells and form the appropriate target vector y.
+
+Take this first grid cell, there's nothing worth detecting in that grid cell. None of the three classes pedestrian, car and motocycle, appear in the upper left grid cell and so, the target y corresponding to that grid cell would be equal to this. 
+
+![alt text](_assets/GridCellNoData.png)
+
+Where Pc for the first anchor box is zero because there's nothing associated for the first anchor box, and is also zero for the second anchor box and so on all of these other values are don't cares. 
+
+Most of the grid cells have nothing in them, but for that box over there, you would have this target vector y. So assuming that your training set has a bounding box like this for the car, it's just a little bit wider than it's tall.
+
+If your anchor boxes are as below:
+
+![alt text](_assets/AnchorBoxesYolo.png)
+
+Then the red box has just slightly higher IoU with anchor box two. And so, the car gets associated with this lower portion of the vector.
+
+![alt text](_assets/Car.png)
+
+Notice then that Pc associate anchor box 1 is 0. So you have don't cares all these components. Then you have this Pc is equal to one, then you should use bx, by, bh, bw from anchor box 2 in vector y to specify the position of the red bounding box, and then specify that the correct object is class 2.
+
+![alt text](_assets/BoundingBox.png)
+
+You go through this and for each of your nine grid positions each of your three by three grid positions, you would come up with a 16 dimensional vector. And so, that's why the final output volume is going to be 3 by 3 by 16.
+
+As usual for simplicity on the slide I've used a 3 by 3 the grid. 
+
+In practice it might be more like a 19 by 19 by 16. Or in fact if you use more anchor boxes, maybe 19 by 19 by 5 x 8 because five times eight is 40. So it will be 19 by 19 by 40. That's if you use five anchor boxes.
+
+That's training and you train ConvNet that inputs an image, maybe 100 by 100 by 3, and your ConvNet would then finally output an output volume in our example, 3 by 3 by 16 or 3 by 3 by 2 by 8. 
+
+![alt text](_assets/YOLOTraining.png)
+
+### Making predictions
+Given an image, your neural network will output this by 3 by 3 by 2 by 8 volume, where for each of the nine grid cells you get a vector like that. So for the grid cell here on the upper left, if there's no object there, hopefully, your neural network will output 0 in the first pc, and 0 in the second pc, and it will output some other values. Your neural network can't output a question mark, can't output a don't care. So I'll put some numbers for the rest. But these numbers will basically be ignored because the neural network is telling you that there's no object there. So it doesn't really matter whether the output is a bounding box or there's is a car. So basically just be some set of numbers, more or less noise.
+
+![alt text](_assets/PredictNoObject.png)
+
+In contrast, for the box with object hopefully, the value of y to the output for that box at the bottom left, hopefully would be something like zero for bounding box one. And then just open a bunch of numbers, just noise. Hopefully, you'll also output a set of numbers that corresponds to specifying a pretty accurate bounding box for the car.
+
+![alt text](_assets/YoloPredictCar.png)
+
+### Outputting the non-max supressed outputs
+Finally, you run this through non-max suppression. 
+
+Let's look at the new test set image. Here's how you would run non-max suppression.
+
+* If you're using two anchor boxes, then for each of the non-grid cells, you get two predicted bounding boxes. Some of them will have very low probability, very low Pc, but you still get two predicted bounding boxes for each of the nine grid cells. And notice that some of the bounding boxes can go outside the height and width of the grid cell that they came from. 
+* Next, you then get rid of the low probability predictions. So get rid of the ones that even the neural network says, gee this object probably isn't there.
+* Finally if you have three classes you're trying to detect, you're trying to detect pedestrians, cars and motorcycles. What you do is, for each of the three classes, independently run non-max suppression for the objects that were predicted to come from that class. But use non-max suppression for the predictions of the pedestrians class, run non-max suppression for the car class, and non-max suppression for the motorcycle class. But run that basically three times to generate the final predictions.
+
+The output of this is hopefully that you will have detected all the cars and all the pedestrians in this image.
+
+He divides the image into 9 cells:
+
+```
++---+---+---+
+| C | C | C |
++---+---+---+
+| C | C | C |
++---+---+---+
+| C | C | C |
++---+---+---+
+```
+
+Each cell is responsible for detecting objects whose center lies in that cell.
+
+In his example picture:
+
+There is a car located in the middle-bottom cell.
+
+So that grid cell must output the detection.
+
+Problem:
+
+An object can have different shapes (tall + thin, short + wide, etc.)
+
+Solution:
+
+For each grid cell, YOLO predicts multiple bounding boxes, each corresponding to a different shape pattern.
+
+These patterns are called anchor boxes.
+
+Andrew uses 2 anchor boxes per cell:
+* Anchor 1: tall, thin
+* Anchor 2: wide, short
+
+This means each grid cell predicts two possible objects.
+
+Each anchor box predicts 8 numbers:
+
+1. pc — is there an object?
+2. bx — x center
+3. by — y center
+4. bh — height
+5. bw — width
+6. class probabilities (3 classes in video): cat, car, pedestrian
+
+→ 3 numbers
+
+Total = 8 numbers.
+
+So the prediction for one anchor box is:
+```
+[ pc, bx, by, bh, bw, c1, c2, c3 ]
+```
+
+That's 8 numbers per anchor.
+
+Each cell has:
+* 2 anchor boxes
+* 8 numbers per anchor box
+
+So per cell:
+
+2 × 8 = 16 numbers
+
+Grid is 3×3
+Each grid cell predicts 2 anchors × 8 numbers
+
+Total tensor shape:
+
+3 × 3 × 2 × 8
+
+Meaning:
+* 3×3 = number of grid cells
+* 2 = number of anchor boxes per cell
+* 8 = information predicted per anchor box
+
+3 × 3: The image is split into 9 regions.
+
+× 2: Each region predicts two possible bounding boxes (using two anchor shapes).
+
+× 8: Each predicted box includes:
+* pc
+* bx
+* by
+* bh
+* bw
+* class1
+* class2
+* class3
+
+That makes 8 numbers.
+```
+Grid cell (i,j):
+    Anchor box 1 → [8 numbers]
+    Anchor box 2 → [8 numbers]
+```
+
+So each cell literally has:
+
+```
+[
+  [pc, bx, by, bh, bw, c1, c2, c3],   ← anchor 1
+  [pc, bx, by, bh, bw, c1, c2, c3]    ← anchor 2
+]
+```
+
+YOLO chooses the anchor whose shape (aspect ratio) best matches the ground truth box.
+
+So for the car:
+* If the car is wide → the "wide" anchor box is assigned
+* If the car is tall → the "tall" anchor box is assigned
+
+Only one anchor box per cell is responsible for each object.
+
+This is why we need anchors.
+
+Step 1 — YOLO outputs many boxes
+
+From the grid 3×3 and 2 anchors per cell:
+
+→ total 3 × 3 × 2 = 18 predicted boxes
+Each box has:
+
+probability pc
+
+class probabilities
+
+bounding box coordinates
+
+So YOLO outputs 18 box predictions.
+
+Step 2 — For each class, YOLO filters boxes
+
+YOLO computes a confidence score = pc × class probability.
+
+Then it filters the boxes by class:
+
+Example:
+For Car:
+
+You may end up with e.g. 5 boxes that say “car with high confidence”.
+
+For Pedestrian:
+
+Maybe 3 boxes predict “pedestrian”.
+
+For Motorcycle:
+
+Maybe 2 boxes predict “motorcycle”.
+
+So YOLO now has 3 groups of predictions — one per class.
+
+NMS must be run per class, not globally
+
+This is the key idea:
+
+You do NOT run NMS across all classes at once.
+
+Because a pedestrian box should not suppress a car box.
+
+You run a separate NMS for:
+* all pedestrian boxes
+* all car boxes
+* all motorcycle boxes
+
+That means 3 independent NMS passes.
+
+That is why Andrew says:
+
+"We run non-max suppression once per class."
+
+Because bounding boxes of different classes should NOT eliminate each other.
+
+Example:
+
+Imagine YOLO predicts:
+* A “car” box over the car
+* A “pedestrian” box on the sidewalk near the car
+
+If you accidentally ran NMS across ALL boxes:
+
+The high-confidence car box might delete the pedestrian box
+because their IoU overlaps.
+
+This would be a terrible mistake.
+
+Therefore:
+
+NMS must only compare boxes of the same class.
+
+IoU measures how much two boxes overlap.
+* Big overlap → high IoU
+* Small overlap → low IoU
+
+Non-Max Suppression:
+* Keep the highest confidence box
+* Remove other boxes with high IoU (duplicates)
+* Repeat
+
+→ You end up with one box per object.
 
 
 
