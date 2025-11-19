@@ -678,6 +678,175 @@ But bh and bw could be greater than 1. In particular, if you had a car where the
 
 ![alt text](_assets/BoundingBoxesRange.png)
 
+## Intersection Over Union
+Intersection Over Union is used for:
+* Evaluating object detection algorithm
+* Adding another component to object detection algorithm to make it work better.
+
+### Evaluating object localization
+In objection detection task, we expect to localize the object.
+
+![alt text](_assets/LocalizationPosition.png)
+
+If the red box the ground-truth bounding box, and if your algorithm outputs this bounding box in purple, is this a good outcome or a bad one?
+
+What the intersection over union function does, or IoU does, is it computes the intersection over union of these two bounding boxes. 
+
+The union of the 2 bounding boxes is the area that is contained in either bounding boxes.
+
+![alt text](_assets/Union2Boxes.png)
+
+Intersection of 2 bounding boxes
+
+![alt text](_assets/Intersection2Boxes.png)
+
+Intersection Over Union = ${sizeOfIntersection \over sizeOfUnion}$
+
+![alt text](_assets/IoU.png)
+
+By convension, the low compute devision task will judge that your answer is correct if the IoU is greater than 0.5.
+
+If the predicted and the ground-truth bounding boxes overlapped perfectly, the IoU would be 1, because the intersection would equal to the union. 
+
+In general, so long as the IoU is greater than or equal to 0.5, then the answer will look okay, look pretty decent.
+
+By convention, very often 0.5 is used as a threshold to judge as whether the predicted bounding box is correct or not. 
+
+If you want to be more stringent, you can judge an answer as correct, only if the IoU is greater than equal to 0.6 or some other number. The higher the IoUs, the more accurate the bounding the box.
+
+This is one way to map localization, to accuracy where you just count up the number of times an algorithm correctly detects and localizes an object where you could use a definition like this, of whether or not the object is correctly localized.
+
+0.5 is just a human chosen convention. There's no particularly deep theoretical reason for it. You can also choose some other threshold like 0.6 if you want to be more stringent. 
+
+More generally, IoU is a measure of the overlap between two bounding boxes.
+
+Where if you have two boxes, you can compute the intersection, compute the union, and take the ratio of the two areas. This is also a way of measuring how similar two boxes are to each other. 
+
+## Non-max Suppression
+One of the problems of Object Detection is that the algorithm may find multiple detections of the same objects. Non-max Suppression is a way to make sure that the algorithm detects each object only once.
+
+### Non-max suppression example
+Let's say you want to detect pedestrians, cars, and motorcycles in this image.
+
+![alt text](_assets/Non-maxExample.png)
+
+You might place a grid over this, and this is a 19 by 19 grid. 
+
+![alt text](_assets/Non-maxExampleGrid.png)
+
+While technically the car on the right has just one midpoint, so it should be assigned just one grid cell. The car on the left also has 1 midpoint, so only 1 of those grid cells should predict there is a car.
+
+In practice, you're running an object classification and localization algorithm for every one of these split cells. So it's quite possible that many split cells might think that the center of a car is in it.
+
+Because you're running the image classification and localization algorithm on every grid cell, on 361 grid cells, it's possible that many of them will raise their hand and say, "My Pc, my chance of thinking I have an object in it is large." Rather than just having two of the grid cells out of the 19 squared or 361 think they have detected an object. 
+
+-> You end up with multiple detections of each object.
+
+![alt text](_assets/MultipleDetections.png)
+
+What non-max suppression does, is it cleans up these detections. So they end up with just one detection per car, rather than multiple detections per car.
+
+Concretely, what it does, is it first looks at the probabilities associated with each of these detections which is Pc (the probability of a detection). And it first takes the largest one, which in this case is 0.9 and says, "That's my most confident detection, so let's highlight that and just say I found the car there." 
+
+![alt text](_assets/MultipleDetections.png)
+
+Having done that the non-max suppression part then looks at all of the remaining rectangles and all the ones with a high overlap, with a high IOU, with this one that you've just output will get suppressed. So those two rectangles with the 0.6 and the 0.7. Both of those overlap a lot with the light blue rectangle. So those, you are going to suppress and darken them to show that they are being suppressed.
+
+Next, you then go through the remaining rectangles and find the one with the highest probability, the highest Pc, which in this case is this one with 0.8. So let's commit to that and just say, "Oh, I've detected a car there." And then, the non-max suppression part is to then get rid of any other ones with a high IOU. 
+
+![alt text](_assets/HighlightedNonMax.png)
+
+Non-max means that you're going to output your maximal probabilities classifications but suppress the close-by ones that are non-maximal.
+
+Let's go through the details of the algorithm. First, on this 19 by 19 grid, you're going to get a 19 by 19 by 8 output volume. 
+
+![alt text](_assets/19x19x8Example.png)
+
+Although, for this example, I'm going to simplify it to say that you only doing car detection. So, let me get rid of the C1, C2, C3, and pretend for this line, that each output for each of the 19 by 19, so for each of the 361, which is 19 squared, for each of the 361 positions, you get an output prediction of the following. 
+
+![alt text](_assets/PredictionExample.png)
+
+Which is the chance there's an object, and then the bounding box. And if you have only one object, there's no C1, C2, C3 prediction. The details of what happens, you have multiple objects, I'll leave to the programming exercise, which you'll work on towards the end of this week. 
+
+To intimate non-max suppression, the first thing you can do is discard all the boxes, discard all the predictions of the bounding boxes with Pc less than or equal to some threshold, let's say 0.6. 
+
+We're going to say that unless you think there's at least a 0.6 chance it is an object there, let's just get rid of it. This has caused all of the low probability output boxes. 
+
+The way to think about this is for each of the 361 positions, you output a bounding box together with a probability of that bounding box being a good one. So we're just going to discard all the bounding boxes that were assigned a low probability.
+
+Next, while there are any remaining bounding boxes that you've not yet discarded or processed, you're going to
+* Repeatedly pick the box with the highest probability, with the highest Pc, and then output that as a prediction. So this is a process on a previous slide of taking one of the bounding boxes, and making it lighter in color. So you commit to outputting that as a prediction for that there is a car there.
+* Next, you then discard any remaining box. Any box that you have not output as a prediction, and that was not previously discarded. So discard any remaining box with a high overlap, with a high IOU, with the box that you just output in the previous step. This second step in the while loop was when on the previous slide you would darken any remaining bounding box that had a high overlap with the bounding box that we just made lighter, that we just highlighted.
+
+You keep doing this while there's still any remaining boxes that you've not yet processed, until you've taken each of the boxes and either output it as a prediction, or discarded it as having too high an overlap, or too high an IOU, with one of the boxes that you have just output as your predicted position for one of the detected objects.
+
+
+I've described the algorithm using just a single object on this slide. If you actually tried to detect three objects say pedestrians, cars, and motorcycles, then the output vector will have three additional components. And it turns out, the right thing to do is to independently carry out non-max suppression three times, one on each of the outputs classes. 
+
+## Anchor Boxes
+One of the problems with object detection is that each of the grid cells can detect only one object. What if a grid cell wants to detect multiple objects? You can use the idea of anchor boxes. 
+
+### Overlapping objects
+Let's start with an example. Let's say you have an image like this. And for this example, I am going to continue to use a 3 by 3 grid. 
+
+![alt text](_assets/Overlapping.png)
+
+Notice that the midpoint of the pedestrian and the midpoint of the car are in almost the same place and both of them fall into the same grid cell.
+
+For that grid cell, if Y outputs this vector where you are detecting three classes: pedestrians, cars and motorcycles, it won't be able to output two detections. So I have to pick one of the two detections to output.
+
+![alt text](_assets/Y-vector.png)
+
+With the idea of anchor boxes, what you are going to do is pre-define two different shapes called, anchor boxes or anchor box shapes.
+
+![alt text](_assets/AnchorBoxes.png)
+
+Then associate two predictions with the two anchor boxes.
+
+In general, you might use more anchor boxes, maybe five or even more. 
+
+So vector Y will be repeated twice in the same vector:
+
+![alt text](_assets/RepeatedY.png)
+
+Because the shape of the pedestrian is more similar to the shape of anchor box 1 and anchor box 2, you can use the first 8 numbers to encode that PC as 1, yes there is a pedestrian.
+
+Use the first bx, by, bh, bw to encode the bounding box around the pedestrian, and then use first c1, c2, c3 to encode that that object is a pedestrian.
+
+Then because the box around the car is more similar to the shape of anchor box 2 than anchor box 1, you can then use the second 8 numbers to encode that the second object is the car, and have the bounding box and so on be all the parameters associated with the detected car.
+
+To summarize, previously, before you are using anchor boxes, for each object in the training set and the training set image, it was assigned to the grid cell that corresponds to that object's midpoint. Output Y was 3x3x8, because we have 3x3 grid, and for each grid position, we had output vector Y.
+
+With 2 anchor boxes, each object is assigned to the same grid cell as before, assigned to the grid cell that contains the object's midpoint, but it is assigned to a grid cell and anchor box with the highest IoU with the object's shape. So, you have two anchor boxes, you will take an object and see which of the two anchor boxes has a higher IoU, will be drawn through bounding box. Whichever it is, that object then gets assigned not just to a grid cell but to a pair. It gets assigned to grid cell comma anchor box pair. And that's how that object gets encoded in the target label. 
+
+The output Y is going to be 3 by 3 by 16. Because Y is now 16 dimensional. Or if you want, you can also view this as 3 by 3 by 2 by 8 ,because there are now two anchor boxes and Y is eight dimensional. And dimension of Y being 8 was because we have 3 objects classes; if you have more objects than the dimension of Y would be even higher. 
+
+### Anchor box example
+
+![alt text](_assets/AnchorBoxExample.png)
+
+The pedestrian is more similar to the shape of anchor box 1. So for the pedestrian, we're going to assign it to the top half of this vector. So yes, there is an object, there will be some bounding box associated at the pedestrian. And I guess if a pedestrian is class 1, then c1 is 1, and then zero, zero. And then the shape of the car is more similar to anchor box 2. And so the rest of this vector will be 1 and then the bounding box associated with the car, and then the car is C2, so there's 0, 1, 0. And so that's the label Y for that lower middle grid cell that this arrow was pointing to. 
+
+![alt text](_assets/AnchorBoxesOutput.png)
+
+Now, what if this grid cell only had a car and had no pedestrian? 
+
+If it only had a car, then assuming that the shape of the bounding box around the car is still more similar to anchor box 2, then the target label Y, if there was just a car there and the pedestrian had gone away, it will still be the same for the anchor box 2 component. Remember that this is a part of the vector corresponding to anchor box 2. And for the part of the vector corresponding to anchor box 1, what you do is you just say there is no object there. So PC is zero, and then the rest of these will be don't cares. 
+
+![alt text](_assets/CarOnly.png)
+
+What if you have two anchor boxes but three objects in the same grid cell? That's one case that this algorithm doesn't handle well. Hopefully, it won't happen. But if it does, this algorithm doesn't have a great way of handling it. I will just influence some default tiebreaker for that case.
+
+What if you have two objects associated with the same grid cell, but both of them have the same anchor box shape? Again, that's another case that this algorithm doesn't handle well. If you influence some default way of tiebreaking if that happens, hopefully this won't happen with your data set, it won't happen much at all. And so, it shouldn't affect performance as much.
+
+Even though I'd motivated anchor boxes as a way to deal with what happens if two objects appear in the same grid cell, in practice, that happens quite rarely, especially if you use a 19 by 19 rather than a 3 by 3 grid. The chance of two objects having the same midpoint rather these 361 cells, it does happen, but it doesn't happen that often. Maybe even better motivation or even better results that anchor boxes gives you is it allows your learning algorithm to specialize better. 
+
+In particular, if your data set has some tall, skinny objects like pedestrians, and some wide objects like cars, then this allows your learning algorithm to specialize so that some of the outputs can specialize in detecting wide, fat objects like cars, and some of the output units can specialize in detecting tall, skinny objects like pedestrians.
+
+Finally, how do you choose the anchor boxes?
+
+People used to just choose them by hand or choose maybe 5 or 10 anchor box shapes that spans a variety of shapes that seems to cover the types of objects you seem to detect. As a much more advanced version, just in the advance common for those of who have other knowledge in machine learning, and even better way to do this in one of the later YOLO research papers, is to use a K-means algorithm, to group together two types of objects shapes you tend to get and then to use that to select a set of anchor boxes that this most stereotypically representative of the maybe multiple, of the maybe dozens of object classes you're trying to detect. But that's a more advanced way to automatically choose the anchor boxes. If you just choose by hand a variety of shapes that reasonably expands the set of object shapes, you expect to detect some tall, skinny ones, some fat, white ones. That should work with these as well.
+
 
 
 
