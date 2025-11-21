@@ -11,6 +11,47 @@
 * Explain the difference between a regular CNN and a U-net
 * Build a U-Net
 
+- [Week 3: Object Detection](#week-3-object-detection)
+  - [Object Localization](#object-localization)
+    - [What are localization and detection?](#what-are-localization-and-detection)
+    - [Classification with localization](#classification-with-localization)
+    - [Defining the target label y](#defining-the-target-label-y)
+    - [Loss function to train NN](#loss-function-to-train-nn)
+  - [Landmark Detection](#landmark-detection)
+  - [Object Detection](#object-detection)
+    - [Car detection example](#car-detection-example)
+    - [Sliding windows detection](#sliding-windows-detection)
+  - [Convolutional implementation of sliding windows](#convolutional-implementation-of-sliding-windows)
+    - [Turning FC layer into convolutional layers](#turning-fc-layer-into-convolutional-layers)
+    - [Convolution implementation of sliding windows](#convolution-implementation-of-sliding-windows)
+  - [Bounding Box Predictions](#bounding-box-predictions)
+    - [Output accurate bounding boxes](#output-accurate-bounding-boxes)
+    - [YOLO algorithm](#yolo-algorithm)
+    - [Specify the bounding boxes](#specify-the-bounding-boxes)
+  - [Intersection Over Union](#intersection-over-union)
+    - [Evaluating object localization](#evaluating-object-localization)
+  - [Non-max Suppression](#non-max-suppression)
+    - [Non-max suppression example](#non-max-suppression-example)
+  - [Anchor Boxes](#anchor-boxes)
+    - [Overlapping objects](#overlapping-objects)
+    - [Anchor box example](#anchor-box-example)
+  - [YOLO Algorithm](#yolo-algorithm-1)
+    - [Training](#training)
+    - [Making predictions](#making-predictions)
+    - [Outputting the non-max supressed outputs](#outputting-the-non-max-supressed-outputs)
+  - [Region Proposals (Optional)](#region-proposals-optional)
+    - [Region proposal: R-CNN](#region-proposal-r-cnn)
+    - [Faster algorithms](#faster-algorithms)
+  - [Semantic Segmentation with U-Net](#semantic-segmentation-with-u-net)
+    - [Object Detection vs. Semantic Segmentation](#object-detection-vs-semantic-segmentation)
+    - [Motivation for U-Net](#motivation-for-u-net)
+    - [Per-pixel class labels](#per-pixel-class-labels)
+    - [Deep Learning for Semantic Segmentation](#deep-learning-for-semantic-segmentation)
+  - [Transpose Convolutions](#transpose-convolutions)
+  - [U-Net Architecture Intuition](#u-net-architecture-intuition)
+  - [U-Net Architecture](#u-net-architecture)
+
+
 ## Object Localization
 ### What are localization and detection?
 * Image classification: Algorithm looks at the picture and says if it's a car or not car.
@@ -1112,6 +1153,586 @@ Non-Max Suppression:
 
 → You end up with one box per object.
 
+## Region Proposals (Optional)
+### Region proposal: R-CNN
+If you recall the sliding windows idea, you would take a train crossfire and run it across all of these different windows and run the detector to see if there's a car, pedestrian, or maybe a motorcycle.
 
+You could run the algorithm convolutionally, but one downside that the algorithm is it just classifies a lot of the regions where there's clearly no object. So this rectangle down here is pretty much blank. It's clearly nothing interesting there to classify, and maybe it was also running it on this rectangle, which look likes there's nothing that interesting there.
+
+![alt text](_assets/NoObjectRegions.png)
+
+Russ Girshik, Jeff Donahue, Trevor Darrell, and Jitendra Malik proposed in the paper, an algorithm called R-CNN, which stands for Regions with convolutional networks or regions with CNNs.
+
+What that does is it tries to pick just a few regions that makes sense to run your continent classifier. So rather than running your sliding windows on every single window, you instead select just a few windows, and run your continent crossfire on just a few windows.
+
+The way that they perform the region proposals is to run an algorithm called a segmentation algorithm, that results in this output 
+
+![alt text](_assets/Segmentation.png)
+
+In order to figure out what could be objects.
+
+For example, the segmentation algorithm finds a blob over here. And so you might pick that pounding balls and say, "Let's run a classifier on that blob." It looks like this little green thing finds a blob there, as you might also run the classifier on that rectangle to see if there's some interesting there. This blue blob, if you run a classifier on that, hope you find the pedestrian, and if you run it on this light cyan blob, maybe you'll find a car, maybe not,. I'm not sure.
+
+The details of this, this is called a segmentation algorithm, and what you do is you find maybe 2000 blobs and place bounding boxes around about 2000 blobs and value classifier on just those 2000 blobs, and this can be a much smaller number of positions on which to run your continent classifier, then if you have to run it at every single position throughout the image.
+
+This is a special case if you are running your continent not just on square-shaped regions but running them on tall skinny regions to try to find pedestrians or running them on your white fat regions try to find cars and running them at multiple scales as well.
+
+It turns out the R-CNN algorithm is still quite slow. So there's been a line of work to explore how to speed up this algorithm. 
+
+### Faster algorithms
+R-CNN: Propose regions. Classify proposed regions one at a
+time. Output label + bounding box.
+
+The basic R-CNN algorithm with proposed regions using some algorithm and then crossfire the proposed regions one at a time. And for each of the regions, they will output the label. So is there a car? Is there a pedestrian? Is there a motorcycle there? And then also outputs a bounding box, so you can get an accurate bounding box if indeed there is a object in that region. So just to be clear, the R-CNN algorithm doesn't just trust the bounding box it was given. It also outputs a bounding box, bx, by, bh, bw, in order to get a more accurate bounding box and whatever happened to surround the blob that the image segmentation algorithm gave it. So it can get pretty accurate bounding boxes. 
+
+One downside of the R-CNN algorithm was that it is actually quite slow. So over the years, there been a few improvements to the R-CNN algorithm.
+
+Fast R-CNN: Propose regions. Use convolution implementation
+of sliding windows to classify all the proposed
+regions.
+
+Russ Girshik proposed the fast R-CNN algorithm, and it's basically the R-CNN algorithm but with a convolutional implementation of sliding windows. So the original implementation would actually classify the regions one at a time. So Fast R-CNN use a convolutional implementation of sliding windows, and this is roughly similar to the idea you saw in the fourth video of this week. And that speeds up R-CNN quite a bit. 
+
+Faster R-CNN: Use convolutional network to propose regions.
+
+It turns out that one of the problems of Fast R-CNN algorithm is that the clustering step to propose the regions is still quite slow and so a different group, Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Son, proposed the Faster R-CNN algorithm, which uses a convolutional neural network instead of one of the more traditional segmentation algorithms to propose a blob on those regions, and that wound up running quite a bit faster than the fast R-CNN algorithm. Although, I think the Faster R-CNN algorithm, most implementations are usually still quite a bit slower than the YOLO algorithm.
+
+The idea of region proposals has been quite influential in computer vision, and I wanted you to know about these ideas because you see others still used these ideas, for myself, and this is my personal opinion, not the opinion of the computer vision research committee as a whole. I think that we can propose an interesting idea but that not having two steps, first, proposed region and then classify it, being able to do everything more or at the same time, similar to the YOLO or the You Only Look Once algorithm that seems to me like a more promising direction for the long term. But that's my personal opinion and not necessary the opinion of the whole computer vision research committee. So feel free to take that with a grain of salt. 
+
+## Semantic Segmentation with U-Net
+Semantic Segmentation is used to draw a careful outline around the object that is detected so that you know exactly which pixels belong to the object and which pixels don't. 
+
+### Object Detection vs. Semantic Segmentation
+Let's say you're building a self-driving car and you see an input image like this and you'd like to detect the position of the other cars.
+
+If you use an object detection algorithm, the goal may be to draw bounding boxes around the other vehicles.
+
+![alt text](_assets/ObjectDetection.png)
+
+This might be good enough for self-driving car, but if you want your learning algorithm to figure out what is every single pixel in this image, then you may use a semantic segmentation algorithm whose goal is to output this.
+
+![alt text](_assets/SemanticSegmentation.png)
+
+Where, for example, rather than detecting the road and trying to draw a bounding box around the roads, which isn't going to be that useful, with semantic segmentation the algorithm attempts to label every single pixel as is this drivable roads or not, indicated by the dark green there.
+
+One of the uses of semantic segmentation is that it is used by some self-driving car teams to figure out exactly which pixels are safe to drive over because they represent a drivable surface. 
+
+### Motivation for U-Net
+Let's look at some other applications. These are a couple of images from research papers by Novikov et al and by Dong et al. 
+
+In medical imaging, given a chest X-ray, you may want to diagnose if someone has a certain condition, but what may be even more helpful to doctors, is if you can segment out in the image, exactly which pixels correspond to certain parts of the patient's anatomy.
+
+![alt text](_assets/U-NetMotivation.png)
+
+In the image on the left, the lungs, the heart, and the clavicle, so the collarbones are segmented out using different colors. This segmentation can make it easier to spot irregularities and diagnose serious diseases and also help surgeons with planning out surgeries.
+
+In the example on the right, a brain MRI scan is used for brain tumor detection. Manually segmenting out this tumor is very time-consuming and laborious, but if a learning algorithm can segment out the tumor automatically; this saves radiologists a lot of time and this is a useful input as well for surgical planning.
+
+The algorithm used to generate this result is an algorithm called U-Net.
+
+### Per-pixel class labels
+Let's use the example of segmenting out a car from some background.
+
+![alt text](_assets/SegmentCar.png)
+
+Let's say for now that the only thing you care about is segmenting out the car in this image.
+
+In that case, you may decide to have two class labels. 
+* 1 for a car
+* 0 for not car.
+
+In this case, the job of the segmentation algorithm of the U-Net algorithm will be to output, either 1 or 0 for every single pixel in this image, where a pixel should be labeled 1, if it is part of the car and label 0 if it's not part of the car. 
+
+Alternatively, if you want to segment this image, looking more finely you may decide that you want to label the car 1. Maybe you also want to know where the buildings are. In which case you would have a second class, class two the building and then finally the ground or the roads, class three, in which case the job the learning algorithm would be to label every pixel as follows instead.
+
+![alt text](_assets/SegmentationMap.png)
+
+Taking the per-pixel labels and shifting it to the right, this is the output that we would like to train a unit table to give.
+
+This is a lot of outputs, instead of just giving a single class label or maybe a class label and coordinates needed to specify bounding box the neural network uni
+
+![alt text](_assets/SemanticSegmentation.png)
+
+What's the right neural network architecture to do that?
+
+### Deep Learning for Semantic Segmentation
+Let's start with the object recognition neural network architecture that you're familiar with and let's figure how to modify this in order to make this new network output, a whole matrix of class labels.
+
+Here's a familiar convolutional neural network architecture, where you input an image which is fed forward through multiple layers in order to generate a class label y hat.
+
+![alt text](_assets/CNN.png)
+
+In order to change this architecture into a semantic segmentation architecture, let's get rid of the last few layers and one key step of semantic segmentation is that, whereas the dimensions of the image have been generally getting smaller as we go from left to right, it now needs to get bigger so they can gradually blow it back up to a full-size image, which is a size you want for the output. 
+
+![alt text](_assets/CNN_removeLastLayers.png)
+
+Specifically, this is what a U-Net architecture looks like. As we go deeper into the U-Net, the height and width will go back up while the number of channels will decrease so the unit architecture looks like this until eventually, you get your segmentation map of the cat.
+
+![alt text](_assets/CNNToUNet.png)
+
+One operation we have not yet covered is what does this look like to make the image bigger?
+
+To explain how that works, you have to know how to implement a transpose convolution.
+
+That's semantic segmentation, a very useful algorithm for many computer vision applications where the key idea is you have to take every single pixel and label every single pixel individually with the appropriate class label. As you've seen in this video, a key step to do that is to take a small set of activations and to blow it up to a bigger set of activations.
+
+In order to do that, you have to implement something called the transpose convolution, which is important operation that is used multiple times in the unit architecture.
+
+Semantic segmentation means:
+
+Predict a label for every pixel of an image.
+
+Example:
+* Every pixel that belongs to a cat → label 1
+* Every pixel that belongs to the background → label 0
+
+So the output is not a single number or a bounding box —
+it is a full image of labels the same size as the input.
+
+The goal of U-Net is:
+* Understand what is in the image
+* Understand where it is
+* Output a mask (pixel-wise map)
+
+U-Net is especially good when:
+* You have small datasets (medical imaging, satellite images)
+* You need very accurate boundaries (e.g., tumor outline)
+
+## Transpose Convolutions
+Transpose Convolutions is part of the U-Net architecture. It helps by taking a 2x2 inputs and blowing it up into a 4x5 dimensional output.
+
+![alt text](_assets/TransposeConv.png)
+
+You're familiar with the normal convolution in which a typical layer of a new network may input a 6x6x3 image, convolve that with a set of, say, 3x3x3 filters and if you have 5 of these, then you end up with an output that is 4x4x5.
+
+A transpose convolution looks a bit difference. You might inputs a 2x2, said that activation, convolve that with a 3x3 filter, and end up with an output that is 4x4, that's bigger than the original inputs. 
+
+For example:
+* Input: 2x2
+* Output: 4x4
+* Filter: 3x3 (fxf)
+* Padding: p=1
+* Stride: s=2
+
+![alt text](_assets/TransposeExample.png)
+
+In the regular convolution, you would take the filter and place it on top of the inputs and then multiply and sum up. 
+
+In the transpose convolution, instead of placing the filter on the input, you would instead place a filter on the output.
+
+Let's starts with this upper left entry of the input, which is a 2. We are going to take this number 2 and multiply it by every single value in the filter and we're going to take the output which is 3x3 and paste it in this position.
+
+![alt text](_assets/TransposeConvUpperLeft.png)
+
+Now, the padding area isn't going to contain any values. What we're going to end up doing is ignore this paddy region and just throw in 4 values in the red highlighted area and specifically, the upper left entry is 0 times 2, so that's 0. The second entry is 1 times 2, that is 2. Down here is 2 times 2, that's 4, and then over here is 1 times 2 so that's equal to 2.
+
+![alt text](_assets/TransposeConv1stEntry.png)
+
+Next, let's look at the second entry of the input which is a 1. I'm going to switch to green pen for this. Once again, we're going to take a 1 and multiply by one every single elements of the filter, because we're using a stride of 2, we're now going to shift to box in which we copy the numbers over by 2 steps. Again, we'll ignore the area which is in the padding and the only area that we need to copy the numbers over is this green shaded area. 
+
+![alt text](_assets/TransposeConvUpperRight.png)
+
+You may notice that there is some overlap between the places where we copy the red-colored version of the filter and the green version and we cannot simply copy the green value over the red one. Where the red and the green boxes overlap, you add 2 values together.
+
+Where there's already a 2 from the first weighted filter, you add to it this first value from the green region which is also 2. You end up with 2 plus 2. The next entry, 0 times 1 is 0, then you have 1, 2 plus 0 times 1, so 2 plus 0 followed by 2, followed by 1 and again, we shifted 2 squares over from the red box here to the green box here because it using a stride of 2.
+
+![alt text](_assets/TransposeConv2ndEntry.png)
+
+Next, let's look at the lower-left entry of the input, which is 3.We'll take the filter, multiply every element by 3 and we've gone down by 1 step here. We're going to go down by 2 steps here. We will be filling in our numbers in this 3x3 square and you find that the numbers you copying over are 2 times 3, which is 6, 1 times 3, which is 3, 0 times 3, which is 0, and so on, 3, 6, 3.
+
+![alt text](_assets/TransposeConv3rdEntry.png)
+
+Then lastly, let's go into the last input element, which is 2. We will multiply every elements of the filter by 2 and add them to this block and you end up with adding 1 times 2 which is plus 2, and so on for the rest of the elements.
+
+![alt text](_assets/TransposeConv4thEntry.png)
+
+The final step is to take all the numbers in these 4x4 matrix of values in the 16 values and add them up.
+
+You end up with 0 here, 2 plus 2 is 4, 0, 1, 4 plus 6 is 10, 2 plus 0 plus 3 plus 2 is 7, 2 plus 4 is 6. There is 0, 3 plus 4 was 7, 0, 2, 6, 3 plus 0 was 3, 4, 2, hence that's your 4x4 outputs.
+
+![alt text](_assets/4x4Output.png)
+
+In case you're wondering why do we have to do it this way, I think there are multiple possible ways to take small inputs and turn it into bigger outputs, but the transpose convolution happens to be one that is effective and when you learn all the parameters of the filter here, this turns out to give good results when you put this in the context of the U-Net which is the learning algorithm will use now.
+
+In this video, we step through step-by-step how the transpose convolution lets you take a small input, say 2x2, and blow it up into larger output, say 4x4. 
+
+## U-Net Architecture Intuition
+
+![alt text](_assets/SemanticSegment.png)
+
+Here's a rough diagram of the neural network architecture for semantic segmentation. And so we use normal convolutions for the first part of the neural network. This part of the neural network will sort of compress the image. You've gone from a very large image to one where the heightened whiff of this activation is much smaller. So you've lost a lot of spatial information because the dimension is much smaller, but it's much deeper.
+
+![alt text](_assets/1stHalf.png)
+
+So, for example, this middle layer may represent that looks like there's a cat roughly in the lower right hand portion of the image. But the detailed spatial information is lost because of heightened with is much smaller.
+
+Then the second half of this neural network uses the transpose convolution to blow the representation size up back to the size of the original input image.
+
+![alt text](_assets/2ndHalf.png)
+
+It turns out that there's one modification to this architecture that would make it work much better. And that's what we turn this into the unit architecture, which is that skip connections from the earlier layers to the later layers like this.
+
+![alt text](_assets/SkipConnection.png)
+
+So that this earlier block of activations is copied directly to this later block.
+
+Why do we want to do this?
+
+It turns out that for this, next final layer to decide which region is a cat. Two types of information are useful.
+* One is the high level, spatial, high level contextual information which it gets from this previous layer. Where hopefully the neural network, we have figured out that in the lower right hand corner of the image or maybe in the right part of the image, there's some cat like stuff going on. But what is missing is a very detailed, fine grained spatial information. Because this set of activations here has lower spatial resolution to heighten with is just lower.
+* 
+![alt text](_assets/LayerBefore.png)
+
+So what the skip connection does is it allows the neural network to take this very high resolution, low level feature information where it could capture for every pixel position, how much fairly stuff is there in this pixel? And used to skip connection to pause that directly to this later layer. And so this way this layer has both the lower resolution, but high level, spatial, high level contextual information, as well as the low level. But more detailed texture like information in order to make a decision as to whether a certain pixel is part of a cat or not. 
+
+![alt text](_assets/SkipConnectionSemantic.png)
+
+In the downward path, the image is made smaller:
+
+256×256 → 128×128 → 64×64 → 32×32 → 16×16 …
+
+When you shrink an image:
+* you lose spatial detail
+* thin edges disappear
+* small objects get blurred
+* exact pixel location information is lost
+
+So by the time the network reaches the bottom (the bottleneck), it knows:
+
+“There is a cat and a dog here” but it does not know: “Exactly which pixels belong to which animal.”
+
+When you go back up (upsampling), you try to reconstruct the full mask.
+
+But because you lost fine details earlier, the upsampled image can look:
+* blurry
+* chunky
+* imprecise around edges
+* missing details like legs, tails, object boundaries
+
+This is why early segmentation models produced “blobby” masks.
+
+When the image is still large (e.g., 256×256, 128×128), you still have beautiful high-resolution spatial detail.
+
+Skip connections copy that detail and send it directly to the upsampling path.
+
+So U-Net combines:
+
+1. What the image contains
+(learned in the bottleneck → semantic meaning)
+
+2. Exactly where things are
+(from early layers → spatial detail)
+
+Imagine you want to draw a coloring-book outline:
+
+The encoder (down path) learns:
+“This picture has a cat, here’s the shape.”
+
+The decoder (up path) tries to redraw it
+but only based on rough ideas.
+
+Without skip connections → the picture becomes blurry.
+
+Skip connections are like tracing paper:
+
+You give the decoder the original outline so it can draw sharp boundaries again.
+
+Without skip connection:
+```
+Input → shrink → shrink → shrink → expand → expand → output mask
+      (details lost)                  (can’t recover details)
+```
+
+With skip connection:
+```
+Input → shrink → shrink → shrink → expand → expand → output mask
+   |______________________________↗
+        (send details across)
+```
+
+The early “big image” features are CONCATENATED with the upsampled features.
+
+Because segmentation needs pixel-level accuracy:
+* drawing exact edges
+* separating touching objects
+* preserving thin structures (like roads, blood vessels, cell walls)
+
+The downsampling path alone cannot recover this detail.
+
+Skip connections “bring back the lost detail”.
+
+A skip connection is simply:
+
+Copy the data and send it forward along an extra shortcut path — in addition to the main path.
+
+So the data travels in both paths at the same time.
+
+Imagine data is electricity:
+
+Main wire:
+```
+A → B → C → D
+```
+
+Skip wire:
+```
+A ----------------> D
+```
+
+Electricity flows through both wires.
+There is no decision.
+Both signals reach D, and then D combines them.
+
+That’s exactly how skip connections work.
+
+Data flows through the main path
+
+Convolution → ReLU → Pooling → Convolution → …
+
+At the same time
+
+A copy of the earlier features is forwarded to the later layer.
+
+Later, the model adds or concatenates them.
+
+No choosing.
+No checking.
+No decision.
+
+Just copy + combine.
+
+Because:
+* The deep layers understand what is in the image
+* The shallow layers remember where things are
+
+The model needs both pieces of information to segment correctly.
+
+## U-Net Architecture
+
+![alt text](_assets/U-NetMotivation.png)
+
+This is what a U-Net looks like. 
+
+This is also why it's called a U-Net, because when you draw it like this, it looks a lot like a U.
+
+Fun fact, when they wrote the original unit paper, they were thinking of the application of biomedical image segmentation, really segmenting medical images. But these ideas turned out to be useful for many other computer vision, semantic segmentation applications as well.
+
+The input to the unit is an image, let's say, is h by w by three, for three channels RGB channels. I'm going to visualize this image as a thin layer like that. I know that previously we had taken neural network layers and drawn them, as three D blocks like this, where this might be rise of h by w by three. 
+
+Input: image h x w x 3 (3 channels). It's visualized as a thin layer as below
+
+![alt text](_assets/VisualizeUNetInput.png)
+
+First part of the unit uses normal feed forward neural network convolutional layers. A black arrow is used to denote a convolutional layer, followed by a value activation function.
+
+The next layer, we have increased the number of channels a little bit, but the dimension is still height by width by a little bit more channels and then another convolutional layer with another activation function.
+
+![alt text](_assets/FirstLayers.png)
+
+Now we're still in the first half of the neural network. We're going to use Max pooling to reduce the height and width. So maybe you end up with a set of activations where the height and width is lower, but maybe a sticker, so the number of channels is increasing.
+
+![alt text](_assets/MaxPooling.png)
+
+Then we have two more layers of normal feed forward convolutions with a ReLU activation function
+
+![alt text](_assets/ReLU.png)
+
+And then the supply Max pooling again.
+
+![alt text](_assets/MaxPoolingAgain.png)
+
+Repeat until you end up with this
+
+![alt text](_assets/NormalConvLayer.png)
+
+So far, this is the normal convolution layers with activation functions that you've been used to from earlier videos with occasional max pooling layers.
+
+Notice that the height of this layer, height and width are now very small.
+
+We're going to start to apply transpose convolution layers, which I'm going to note by the green arrow in order to build the dimension of this neural network back up.
+
+With the first transpose convolutional layer or trans conv layer, you're going to get a set of activations that looks like that.
+
+![alt text](_assets/TransposeConvLayer.png)
+
+In this example, we did not increase the height and width, but we did decrease the number of channels.
+
+There's one more thing you need to do to build a U-Net, which is to add in that skip connection which I'm going to denote with this grey arrow.
+
+![alt text](_assets/SkipConnectionU-Net.png)
+
+What the skip connection does is it takes this set of activations and just copies it over to the right.
+
+![alt text](_assets/Copy.png)
+
+And so the set of activations you end up with is like this.
+
+![alt text](_assets/AfterCopy.png)
+
+The light blue part comes from the transpose convolution, and the dark blue part is just copied over from the left.
+
+To keep on building up the U-Net we are going to then apply a couple more layers of the regular convolutions, followed by our value activation function so denoted by the black arrows, like so, 
+
+![alt text](_assets/RegularConv.png)
+
+Then we apply another transpose convolutional layer. So green arrow and here we're going to start to increase the dimension, increase the height and width of this image.
+
+![alt text](_assets/IncreaseDim.png)
+
+So now the height is getting bigger. But here, too, we're going to apply a skip connection. So there's a grey arrow again where they take this set of activations and just copy it right there, over to the right.
+
+![alt text](_assets/AnotherSkipConnection.png)
+
+More convolutional layers and other transpose convolution, skip connection. Once again, we're going to take this set of activations and copy it over to the right.
+
+![alt text](_assets/MoreConvLayer.png)
+
+And then more convolutional layers, followed by another transpose convolution. Skip connection, copy that over. 
+
+![alt text](_assets/MoreConvLayer2.png)
+
+Now we're back to a set of activations that is the original input images, height and width.
+![alt text](_assets/ActivationInput.png)
+
+
+We're going to have a couple more layers of a normal fee dforward convolutions.
+
+Then finally, to take this and map this to our segmentation map, we're going to use a one by one convolution which I'm going to denote with that magenta arrow to finally give us this which is going to be our output.
+
+The dimensions of this output layer is going to be h by w, so the same dimensions as our original input by num classes.
+
+So if you have three classes to try to recognize, this will be 3. If you have 10 different classes to try to recognize in your segmentation at then that last number will be 10.
+
+What this does is for every one of your pixels you have h by w pixels you have, an array or a vector, essentially of n classes numbers that tells you for our pixel how likely is that pixel to come from each of these different classes.
+
+![alt text](_assets/OutputDim.png)
+
+If you take a arg max over these n classes, then that's how you classify each of the pixels into one of the classes, and you can visualize it like the segmentation map showing on the right. So that's it. 
+
+![alt text](_assets/SegmentationMapOnRight.png)
+
+U-Net is a neural network used for semantic segmentation:
+
+It predicts a label for every single pixel of an image.
+
+Example:
+Given a medical image of a tumor → it outputs a mask showing which pixels are tumor and which are healthy tissue.
+
+U-Net is famous because it performs very well even with small datasets (like biomedical images).
+
+Every image entering U-Net has shape:
+
+```
+Height × Width × Channels
+e.g., 256 × 256 × 3
+```
+
+3 channels = RGB.
+
+U-Net is made of two halves:
+1. Contracting path (downsampling) → learns what is in the image
+2. Expansive path (upsampling) → finds where things are in the image
+3. Skip connections → help restore details between matching layers
+
+This creates a shape that looks like a “U”.
+
+**Contracting Path (left side)**
+
+This part acts like a typical CNN classifier:
+
+Each level contains:
+* 2 convolution layers (e.g., Conv → ReLU → Conv → ReLU)
+* 1 max pooling step (reduces image size)
+
+What happens as we go down:
+* The image gets smaller
+* But the number of channels increases
+
+Example:
+
+```
+256×256×3 → 128×128×64 → 64×64×128 → 32×32×256 → ...
+```
+
+Why?
+
+Shrinking helps the network learn:
+* shapes
+* textures
+* “what” objects exist
+* high-level features
+
+But shrinking destroys detailed spatial information — that’s why we need skip connections later.
+
+**Expansive Path (right side)**
+
+The right side does the opposite:
+* It upsamples the image (makes it larger again)
+* Uses transpose convolutions (sometimes called “deconvolutions”)
+* Restores the image to its original size
+
+Example:
+```
+32×32 → 64×64 → 128×128 → 256×256
+```
+
+This part answers:
+
+“Where exactly is the tumor / object / segment?”
+
+**Skip Connections (the horizontal arrows)**
+
+These are the MOST important feature of U-Net.
+
+As the image shrinks during the contracting path, we lose:
+* sharp edges
+* fine boundaries
+* small details
+
+So U-Net copies feature maps from the down path and directly sends them to the same-size layer in the up path.
+
+This does NOT replace the main path. It simply adds extra information to help the decoder.
+
+Why is this powerful?
+
+Because the upsampling layers:
+* recover lost details
+* draw sharp boundaries
+* combine abstract features + fine details
+
+This is why the architecture is called U-Net — the two halves mirror each other and the skip connections form the horizontal bars of the “U”.
+
+Output Layer (1×1 Convolution)
+
+Finally, when the image is back to the original size (e.g., 256×256):
+* U-Net applies a 1×1 convolution
+* This converts the deep feature representation into the number of classes
+
+Example:
+
+For binary segmentation (object / background):
+```
+Output: 256×256×1
+Each pixel has a probability between 0 and 1.
+```
+
+For multi-class segmentation (cat / dog / background):
+```
+Output: 256×256×3
+Each channel is probability for each class.
+```
+
+1. CNN downsampling learns what the objects are.
+2. Upsampling learns where they are.
+3. Skip connections preserve details that normally get lost.
+4. Works even with small datasets.
+5. Great for precise pixel-level prediction.
+
+This combination makes U-Net extremely popular in:
+* Medical imaging
+* Satellite imaging
+* Road / building detection
+* Cell structure segmentation
+* Any task needing precise boundaries
 
 
