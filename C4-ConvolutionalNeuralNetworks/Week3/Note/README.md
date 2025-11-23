@@ -888,6 +888,55 @@ Finally, how do you choose the anchor boxes?
 
 People used to just choose them by hand or choose maybe 5 or 10 anchor box shapes that spans a variety of shapes that seems to cover the types of objects you seem to detect. As a much more advanced version, just in the advance common for those of who have other knowledge in machine learning, and even better way to do this in one of the later YOLO research papers, is to use a K-means algorithm, to group together two types of objects shapes you tend to get and then to use that to select a set of anchor boxes that this most stereotypically representative of the maybe multiple, of the maybe dozens of object classes you're trying to detect. But that's a more advanced way to automatically choose the anchor boxes. If you just choose by hand a variety of shapes that reasonably expands the set of object shapes, you expect to detect some tall, skinny ones, some fat, white ones. That should work with these as well.
 
+Anchor boxes are predefined bounding box shapes (stored in the model) that help the network predict objects of different sizes and shapes.
+
+They are like “templates” for bounding boxes.
+
+Suppose your dataset has:
+* tall objects → people
+* wide objects → cars
+
+A single predicted box shape cannot detect both correctly.
+
+So we give each grid cell two anchor boxes:
+
+* A tall, skinny anchor (for people)
+* A wide, short anchor (for cars)
+
+The network then predicts how to adjust each anchor box (using bx, by, bw, bh) to fit the actual object exactly.
+
+Without anchor boxes:
+
+Each grid cell can predict only one bounding box. But real images may have:
+* a person standing
+* a car next to them
+* maybe a dog too
+→ all inside the same grid cell!
+
+With anchor boxes:
+
+A grid cell can make multiple predictions, e.g.:
+* Anchor 1 → predicts "person"
+* Anchor 2 → predicts "car"
+
+Each anchor is a different shape, so the model learns to use the one that fits best.
+
+Important: Anchor Boxes DO NOT Replace Bounding Box Coordinates
+
+They are only starting shapes.
+
+YOLO still predicts offsets:
+
+bx, by, bw, bh
+
+These tell the network:
+* how far to move the anchor center
+* how much to stretch or shrink the anchor box
+
+Anchor boxes ≠ final bounding boxes
+
+They are templates → the network adjusts them.
+
 ## YOLO Algorithm
 ### Training
 Suppose you're trying to train an algorithm to detect three objects: pedestrians, cars, and motorcycles. And you will need to explicitly have the full background class, so just the class labels here.
