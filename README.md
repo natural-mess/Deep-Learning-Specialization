@@ -73,3 +73,9 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C4-ConvolutionalNeuralNetworks/Week3/Notes/)
 * [Quiz](./C4-ConvolutionalNeuralNetworks/Week3/Quiz/)
 * [Assignments](./C4-ConvolutionalNeuralNetworks/Week3/Assignments/)
+
+### Week 4: Special Applications: Face recognition & Neural Style Transfer
+* [Slides](./C4-ConvolutionalNeuralNetworks/Week4/Slides/)
+* [Notes](./C4-ConvolutionalNeuralNetworks/Week4/Notes/)
+* [Quiz](./C4-ConvolutionalNeuralNetworks/Week4/Quiz/)
+* [Assignments](./C4-ConvolutionalNeuralNetworks/Week4/Assignments/)
