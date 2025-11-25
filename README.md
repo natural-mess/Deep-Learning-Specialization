@@ -79,3 +79,10 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C4-ConvolutionalNeuralNetworks/Week4/Notes/)
 * [Quiz](./C4-ConvolutionalNeuralNetworks/Week4/Quiz/)
 * [Assignments](./C4-ConvolutionalNeuralNetworks/Week4/Assignments/)
+
+## [Course 5: Sequence Models](./C5-SequenceModels/)
+### Week 1: Recurrent Neural Networks
+* [Slides](./C5-SequenceModels/Week1/Slides/)
+* [Notes](./C5-SequenceModels/Week1/Notes/)
+* [Quiz](./C5-SequenceModels/Week1/Quiz/)
+* [Assignments](./C5-SequenceModels/Week1/Assignments/)
