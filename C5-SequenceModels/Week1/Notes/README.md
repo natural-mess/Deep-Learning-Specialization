@@ -598,6 +598,430 @@ $P(y^{<1>},y^{<2>},y^{<3>})=P(y^{<1>})P(y^{<2>}|y^{<1>})P(y^{<3>}|y^{<1>},y^{<2>
 By multiplying out these three that you end up with the probability of this three words sentence.
 
 ## Sampling Novel Sequences
+### Sampling a sequence from a trained RNN
+Remember that a sequence model, models the chance of any particular sequence of words as follows, and so what we like to do is sample from this distribution to generate noble sequences of words.
+
+“Sampling novel sequences” means:
+
+Using a trained sequence model (like an RNN, LSTM, or GRU) to generate new sequences that the model has never seen before.
+
+In plain English:
+
+* Train the model on many examples →
+* Then let it create new text, new music, new DNA sequences, etc.
+
+These generated sequences are novel, meaning the model did not copy them directly from the training set.
+
+![alt text](_assets/SequenceModel.png)
+
+The network was trained using this structure shown at the top, to sample, you do something slightly different.
+
+What you want to do is first sample what is the first word you want your model to generate.
+
+For that you input the usual $x^{<1>}$ = 0, $a^{<0>}$ = 0.
+
+Your first time stamp will have softmax probability over possible outputs. 
+
+![alt text](_assets/FirstSample.png)
+
+What you do is you then randomly sample according to this soft max distribution.
+
+What the soft max distribution gives you is it tells you what is the chance that it refers to this "a", what is the chance that it refers to this "Aaron"? What's the chance it refers to "Zulu", what is the chance that the first word is the "Unknown" word token. Maybe it was a chance it was a end of sentence token.
+
+Then you take this vector and use, for example, the numpy command `np.random.choice` to sample according to distribution defined by this vector probabilities, and that lets you sample the first words.
+
+![alt text](_assets/SampleFirstWord.png)
+
+Next you then go on to the second time step. Remember that the second time step is expecting this $\hat{y}^{<1>}$ as input. But what you do is you then take the $\hat{y}^{<1>}$ that you just sampled and pass that in here as the input to the next timestep. 
+
+Whatever works, you just chose the first time step passes this input in the second position, and then this soft max will make a prediction for what is $\hat{y}^{<2>}$.
+
+![alt text](_assets/SecondTimeStep.png)
+
+Example, let's say that after you sample the first word, the first word happened to be "the", which is very common choice of first word. Then you pass in "the" as $x^{<2>}$, which is now equal to $\hat{y}^{<1>}$. And now you're trying to figure out what is the chance of what the second word is given that the first word is "the". And this is going to be $\hat{y}^{<2>}$. Then you again use this type of sampling function to sample $\hat{y}^{<2>}$. And then at the next time stamp, you take whatever choice you had represented say as a one hard encoding and pass that to the next timestep, then sample the 3rd word to that whatever you chose.
+
+Keep going until you get to the last timestep.
+
+![alt text](_assets/LastTimeStep.png)
+
+How do you know when the sequence ends?
+
+One thing you could do is if the end of sentence token is part of your vocabulary, you could keep sampling until you generate an `<EOS>` token. That tells you you've hit the end of a sentence and you can stop.
+
+Or alternatively, if you do not include `<EOS>` in your vocabulary then you can also just decide to sample 20 words or 100 words or something, and then keep going until you've reached that number of time steps.
+
+This particular procedure will sometimes generate an unknown word token `<UNK>` if you want to make sure that your algorithm never generates this token, one thing you could do is just reject any sample that came out as unknown word token and just keep resampling from the rest of the vocabulary until you get a word that's not an unknown word.
+
+Or you can just leave it in the output as well if you don't mind having an unknown word output.
+
+This is how you would generate a randomly chosen sentence from your RNN language model.
+
+![alt text](_assets/SamplingASequence.png)
+
+### Character-level language model
+So far we've been building a words level RNN, by which I mean the vocabulary are words from English.
+
+Depending on your application, one thing you can do is also build a character-level RNN. In this case your vocabulary will just be the alphabets up to z, and as well as maybe space, punctuation if you wish, the digits 0 to 9, if you want to distinguish the uppercase and lowercase, you can include the uppercase alphabets as well.
+
+One thing you can do as you just look at your training set and look at the characters that appears there and use that to define the vocabulary.
+
+![alt text](_assets/VocabularyChoice.png)
+
+If you build a character level language model rather than a word level language model, then your sequence $y^{<1>}$, $y^{<2>}$, $y^{<3>}$, would be the individual characters in your training data, rather than the individual words in your training data.
+
+So for our previous example, the sentence "cats average 15 hours of sleep a day". In this example, c would be $y^{<1>}$, a would be $y^{<2>}$, t will be $y^{<3>}$, the space will be $y^{<4>}$ and so on.
+
+Using a character level language model has some pros and cons.
+* One is that you don't ever have to worry about unknown word tokens.
+  * In particular, a character level language model is able to assign a sequence like "Mau", a non-zero probability.
+  * Whereas if "Mau" was not in your vocabulary for the word level language model, you just have to assign it the unknown word token.
+* The main disadvantage of the character level language model is that you end up with much longer sequences.
+  * Many english sentences will have 10 to 20 words but may have many, many dozens of characters.
+  * Character language models are not as good as word level language models at capturing long range dependencies between how the the earlier parts of the sentence also affect the later part of the sentence.
+  * Character language models are also just more computationally expensive to train.
+
+The trend I've been seeing in natural language processing is that for the most part, word level language model are still used, but as computers gets faster there are more and more applications where people are, at least in some special cases, starting to look at more character level models. But they tend to be much hardware, much more computationally expensive to train, so they are not in widespread use today. Except for maybe specialized applications where you might need to deal with unknown words or other vocabulary words a lot. Or they are also used in more specialized applications where you have a more specialized vocabulary. 
+
+![alt text](_assets/CharacterLevelLm.png)
+
+Under these methods, what you can now do is build an RNN to look at the purpose of English text, build a word level, build a character language model, sample from the language model that you've trained.
+
+### Sequence generation
+Here are some examples of text-based examples from a language model, actually from a culture level language model. And you get to implement something like this yourself in the exercise.
+
+If the model was trained on news articles, then it generates texts like that shown on the left. And this looks vaguely like news text, not quite grammatical, but maybe sounds a little bit like things that could be appearing news, "concussion epidemic to be examined".
+
+It was trained on Shakespearean text and then it generates stuff that sounds like Shakespeare could have written it.
+
+"The mortal moon hath her eclipse in love. And subject of this thou art another this fold. When besser be my love to me see sabl's. For whose are ruse of mine eyes heaves."
+
+![alt text](_assets/SequenceGeneration.png)
+
+1. Give the RNN an initial character, e.g., "H"
+2. The model outputs probabilities for the next character, e.g.:
+
+|Next char|	Probability|
+|-|-|
+|"e"|	0.6|
+|"a"|	0.2|
+|"!"|	0.01|
+
+3. You sample the next char based on probabilities → maybe "e"
+4. Feed "e" back into the RNN
+5. Get probabilities for the next char
+6. Sample again
+7. Repeat…
+
+This creates a new string of text, like:
+```
+He said the night was fair...
+```
+
+The model never memorized this sentence → it created it.
+
+## Vanishing Gradients with RNNs
+It turns out that one of the problems of the basic RNN algorithm is that it runs into vanishing gradient problems.
+
+### Vanishing gradients with RNNs
+You've seen pictures of RNNs that look like this.
+
+![alt text](_assets/RNN.png)
+
+Let's take a language modeling example. Let's say you see this sentence.
+```
+"The cat, which already ate ..., was full."
+```
+
+```
+"The cats, which already ate ..., were full."
+```
+
+This is one example of when language can have very long-term dependencies where it worded as much earlier can affect what needs to come much later in the sentence.
+
+It turns out that the basic RNN we've seen so far is not very good at capturing very long-term dependencies.
+
+To explain why, you might remember from our earlier discussions of training very deep neural networks that we talked about the vanishing gradients problem. This is a very, very deep neural network, say 100 years or even much deeper. 
+
+![alt text](_assets/VeryDeepNN.png)
+
+Then you would carry out forward prop from left to right and then backprop.
+
+*We said that if this is a very deep neural network, then the gradient from this output y would have a very hard time propagating back to affect the weights of these earlier layers, to affect the computations of the earlier layers.*
+
+For an RNN with a similar problem, you have forward prop going from left to right and then backprop going from right to left. It can be quite difficult because of the same vanishing gradients problem for the outputs of the errors associated with the later timesteps to affect the computations that are earlier.
+
+![alt text](_assets/VanishingGradientsRNNs.png)
+
+In practice, what this means is it might be difficult to get a neural network to realize that it needs to memorize. Did you see a singular noun or a plural noun so that later on in the sequence it can generate either "was" or "were", depending on whether it was singular or plural.
+
+Notice that in English this stuff in the middle could be arbitrarily long. You might need to memorize the singular plural for a very long time before you get to use that bit of information.
+
+Because of this problem, the basic RNN model has many local influences, meaning that the output $\hat{y}^{<3>}$ is mainly influenced by values close to $\hat{y}^{<3>}$ and a value here is mainly influenced by inputs that are somewhat close.
+
+It's difficult for the output here to be strongly influenced by an input that was very early in the sequence.
+
+This is because whatever the output is, whether this got it right, this got it wrong, it's just very difficult for the error to backpropagate all the way to the beginning of the sequence, and therefore to modify how the neural network is doing computations earlier in the sequence.
+
+This is a weakness of the basic RNN algorithm, one which will to address in the next few videos.
+
+But if we don't address it, then RNNs tend not to be very good at capturing long-range dependencies.
+
+Even though this discussion has focused on vanishing gradients, you remember, when we're talking about very deep neural networks that we also talked about exploding gradients. Where doing backprop, the ingredients should not just decrease exponentially they may also increase exponentially with the number of layers you go through.
+
+It turns out that vanishing gradients tends to be the biggest problem with training RNNs. Although when exploding gradients happens it can be catastrophic because the exponentially large gradients can cause your parameters to become so large that your neural network parameters get really messed up.
+
+It turns out that exploding gradients are easier to spot because the parameter has just blow up. You might often see NaNs, not a numbers, meaning results of a numerical overflow in your neural network computation.
+
+If you do see exploding gradients, one solution to that is apply gradients clipping. All that means is, look at your gradient vectors, and if it is bigger than some threshold, re-scale some of your gradient vectors so that it's not too big, so that is clipped according to some maximum value.
+
+If you see exploding gradients, if your derivatives do explore the resilience, just apply gradient clipping. That's a relatively robust solution that will take care of exploding gradients.
+
+But vanishing gradients is much harder to solve.
+
+![alt text](_assets/VanishingAndExplodingGradients.png)
+
+To summarize, in an earlier course, you saw how we're training a very deep neural network. You can run into vanishing gradient or exploding gradient problems where the derivative either decreases exponentially, or grows exponentially as a function of the number of layers.
+
+An RNN, say an RNN processing data over 1,000 times sets, or over 10,000 times sets, that's basically a 1,000 layer or like a 10,000 layer neural network. It too runs into these types of problems.
+
+Exploding gradients you could solve address by just using gradient clipping, but vanishing gradients will take way more to address.
+
+What we'll do in the next video is talk about GRUs, a greater recurrent units, which is a very effective solution for addressing the vanishing gradient problem and will allow your neural network to capture much longer range dependencies.
+
+## Gated Recurrent Unit (GRU)
+Gated Recurrent Unit ha a modification to the RNN hidden layer that makes it much better at capturing long-range connections and helps a lot ưith the vanishing gradient problems.
+
+### RNN unit
+Activation at time t of a RNN
+
+$a^{<t>}=g(W_a[a^{<t-1>},x^{<t>}]+b_a)$
+
+The RNN units I'm going to draw as a picture, drawn as a box which inputs a of t - 1, the activation for the last timestep and also inputs $x^{<t>}$, and these two go together, and after some weights and after this type of linear calculation, if g is a tanh activation function, then after the tanh, it computes the output of activation, a.
+
+The output activation $$a^{<t>}$$ might also be parsed to say a softmax unit or something that could then be used to outputs $\hat{y}^{<t>}$.
+
+This is maybe a visualization of the RNN unit of the hidden layer of the RNN in terms of a picture.
+
+I want to show you this picture because we're going to use a similar picture to explain the GRU or the gated recurrent unit.
+
+![alt text](_assets/RNNUnits.png)
+
+### GRU (simplified)
+A lot of ideas of GRUs were due to these two papers respectively by Junyoung Chung, Caglar, Gulcehre, KyungHyun Cho, and Yoshua Bengio. Sometime is going to refer to this sentence, which we'd seen in the last video, to motivate that given a sentence like this, you might need to remember the cat was singular to make sure you understand why that was rather than were as of the cat was for the cats were full.
+
+```
+"The cat, which already ate …, was full."
+```
+
+As we read in this sentence from left to right, the GRU unit is going to have a new variable called C, which stands for cell, for memory cell.
+
+What the memory cell do is it will provide a bit of memory to remember, for example, whether "cat" was singular or plural, so that when it gets much further into the sentence, it can still work on the consideration whether the subject of the sentence was singular or plural.
+
+At time t, the memory cell will have some value $c^{<t>}$.
+
+What we'll see is that the GRU unit will actually output an activation value $a^{<t>}$ = $c^{<t>}$.
+
+For now I wanted to use different symbols c and a to denote the memory cell value and the output activation value even though they're the same and I'm using this notation because when we talked about LSTMs a little bit later, these will be two different values. But for now, for the GRU $c^{<t>}$ is equal to the output activation $a^{<t>}$.
+
+These are the equations that govern the computations of a GRU unit.
+
+At every time step, we're going to consider an overwriting the memory cell with a value $\tilde{c}^{<t>}$. This going to be a candidate for replacing $c^{<t>}$. We're going to compute this using an activation function, tanh of $w_c$, and so that's the parameter matrix $w_c$ and we'll pass to this parameter matrix the previous value of the memory cell, the activation value, as well as the current input value $x^{<t>}$, then plus a bias.
+
+$\tilde{c}^{<t>} = tanh(W_c[c^{<t-1>},x^{<t>}]+b_c)$
+
+$\tilde{c}^{<t>}$ is going to be a candidate for replacing $c^{<t>}$.
+
+Then the key, really the important idea of the GRU, it will be that we'll have a gate. The gate I'm going to call $\Gamma_u$. This is the capital Greek alphabet, $\Gamma_u$, and u stands for update gate. This would be a value between 0 and 1.
+
+$\Gamma_u$
+
+To develop your intuition about how GRUs work, think of $\Gamma_u$ this gate value as being always 0 or 1. Although in practice, your computer with a sigmoid function applied to this.
+
+$\Gamma_u = \sigma(W_u[c^{<t-1>},x^{<t>}]+b_u)$
+
+Remember that the sigmoid function looks like this, as value is always between 0 and 1. For most of the possible ranges of the input, the sigmoid function is either very, very close to 0 or very, very close to 1.
+
+![alt text](_assets/Sigmoid.png)
+
+For intuition, think of Gamma as being either 0 or 1 most of the time.
+
+I chose the alphabet Gamma for this because if you look at a gated fence. Then there are a lot of Gammas in this fence. That's why your $\Gamma_u$ we're going to use to denote the gate. 
+
+![alt text](_assets/GammaInFences.png)
+
+Also Greek alphabet G, like G for gate, so G for Gamma and G for gate.
+
+Then next the key part of the GRU is this equation, which is that we have come up with a candidate where we're thinking of updating C using $\tilde{c}$ and then the gate will decide whether or not we actually update it.
+
+The way to think about it is maybe this memory cell C is going to be set to either 0 or 1 depending on whether the word you're conserving, really the subject of the sentence is singular or plural. Because it's singular, let's say that we set this to 1 and if it was plural, maybe we'll set this as a 0 and then the GRU unit will memorize the value of the $C^{<t>}$ all the way until here, where this is still equal to 1 and so that tells it was singular so use the choice was.
+
+The job of the gate, of $\Gamma_u$, is to decide when do you update this value. In particular, when you see the phrase the cat, you know that you're talking about a new concept, the subject of the sentence cat. That would be a good time to update this bit and then maybe when you're done using it the cat was full, then you know I don't need to memorize anymore I can just forget that. 
+
+![alt text](_assets/Gamma_uAndC.png)
+
+The specific equation we'll use for the GRU is the following; which is that the actual value of $C^{<t>}$ would be equal to this gate times the candidate value plus 1 minus the gate times the old value $C^{<t>}$ minus 1.
+
+$c^{<t>} = \Gamma_u * \tilde{c}^{<t>} + (1-\Gamma_u)*c^{<t-1>}$
+
+Notice that if the gate, if this update value of z equal to 1, then is saying set the new value of $c^{<t>}$ equal to this candidate value so that's like over here, set the gate equal to one so go ahead and update that bit.
+
+Then for all of these values in the middle, you should have the gate equal 0 so do the same, don't update it, just hang on to the old value.
+
+Because if $\Gamma_u$ = 0, then $1-\Gamma_u$ will be 1 and so it's just setting $c^{<t>}$ equal to the old value $c^{<t-1>}$ even as you scan the sentence from left to right.
+
+When the gate is equal to 0 as saying, don't update it, just hang on to the value and don't forget what it's value "was" and so that way, even when you get all the way down to the word "was", hopefully you've just been setting $c^{<t>}$ = $c^{<t-1>}$ all along and still memorizes the cat was singular.
+
+![alt text](_assets/GRUCalculation.png)
+
+Let me also draw a picture to denote the GRU unit. By the way, when you look in online blog posts and textbooks and tutorials, these types of pictures are quite popular for explaining GRUs as well as we'll see later LSTM units.
+
+The GRU unit inputs $c^{<t-1>}$ for the previous time step and this happens to be equal to $a^{<t-1>}$ so it takes that as input. Then it also takes this input $x^{<t>}$. Then these two things get combined together and with some appropriate waiting and some tanh, this gives you $\tilde{c}^{<t-1>}$, which is a candidate for replacing $c^{<t>}$ and then we have a different set of parameters and through a sigmoid activation function, this gives you $\Gamma_u$, which is the update gate and then finally, all of these things combined together through another operation. I won't write out the formula but this box here which are shaded in purple, represents this equation which we had down there. That's what this purple operation represents and it takes as input the gate value, the candidate new value, that's the gate value again, and the old value for $c^{<t>}$, and together they generate the new value for the memory cell. That's $c^{<t>}$ = $a^{<t>}$.
+
+If you wish, you could also use this passes through a soft-max or something to make some prediction for $\hat{y}^{<t>}$ so that is the GRU units.
+
+These are slightly simplified version of it.
+
+What is remarkably good at is through the gate deciding that when you're scanning the sentence from left to right, say that that's a good time to update one to the memory cell and the, not change it, until you get to the point where you really needed to use this memory cell that you had set even much earlier in the sentence.
+
+Now, because the gate is quite easy to set to 0 so long as this quantity $(W_u[c^{<t-1>},x^{<t>}]+b_u)$ is a large negative value, then up to numerical round-off, the update gate will be essentially 0, very close to 0. When that's the case, then this update equation and sub setting $c^{<t>}$ = $c^{<t-1>}$ and so this is very good at maintaining the value for the cell and because $\Gamma_u$ can be so close to 0, can be 0.000001 or even smaller than that, it doesn't suffer from much of a vanishing gradient problem because in say gamma so close to 0 that this becomes essentially $c^{<t>}$ = $c^{<t-1>}$ and the value of $c^{<t>}$ is maintained pretty much exactly even across many times that.
+
+This can help significantly with the vanishing gradient problem and therefore allowing your network to learn even very long-range dependencies, such as "the cat" and "was" are related even if they are separated by a lot of words in the middle.
+
+![alt text](_assets/GRU_simplified.png)
+
+In the equations have written, $c^{<t>}$ can be a vector. If you have 100-dimensional hidden activation value, then $c^{<t>}$ can be 100-dimensional, and so $c^{<t>}$ would also be the same dimension and $\Gamma_u$ would also be the same dimension as the other things I'm drawing in boxes.
+
+In that case, these asterisks are actually element-wise multiplication.
+
+Here, if the gates is 100-dimensional vector, what it is, is really 100-dimensional vector of bits, the value is mostly 0 and 1, that tells you of this 100-dimensional memory cell, which are the bits you want to update.
+
+Of course in practice, $\Gamma_u$ won't be exactly 0 and 1, sometimes I'll say values in the middle as well. There is convenient for intuition to think of it as mostly taking on values that are pretty much exactly 0, or pretty much exactly 1.
+
+What these element-wise multiplications do is it just element-wise tells you GRU which are the dimensions of your memory cell vector to update at every time step. You can choose to keep some bits constant while updating other bits.
+
+For example, maybe you'll use one-bit to remember the singular or plural cat, and maybe you'll use some other bits to realize that you're talking about food. Because we talked about eating and talk about foods, then you'd expect to talk about whether the cat is full later. You can use different bits and change only a subset of the bits at every point in time.
+
+You now understand the most important ideas that a GRU. What I presented on this slide is actually a slightly simplified GRU unit. Let me describe the full GRU unit.
+
+### Full GRU
+Calculate new value for memory cell.
+
+$\tilde{c}^{<t>} = tanh(W_c[\Gamma_r*c^{<t-1>},x^{<t>}]+b_c)$
+
+This is another gate $\Gamma_r$. You can think of r as standing for relevance.
+
+This gate $\Gamma_r$ tells you how relevant is $c^{<t-1>}$ to computing the next candidate for $c^{<t>}$.
+
+This gate $\Gamma_r$ is computed pretty much as you expect with a new parameter matrix $W_r$, and then the same things as input $x^{<t>}$ plus $b_r$.
+
+$\Gamma_r = \sigma(W_r[c^{<t-1>},x^{<t>}]+b_r)$
+
+As you can imagine, there are multiple ways to design these types of neural networks, and why do we have $\Gamma_r$? Why not use a simpler version from the previous slides?
+
+It turns out that over many years, researchers have experimented with many different possible versions of how to design these units to try to have longer range connections. To try to have model long-range effects and also address vanishing gradient problems. The GRU is one of the most commonly used versions that researchers have converged to and then found as robust and useful for many different problems.
+
+$\Gamma_u = \sigma(W_u[c^{<t-1>},x^{<t>}]+b_u)$
+
+$c^{<t>} = \Gamma_u * \tilde{c}^{<t>} + (1-\Gamma_u)*c^{<t-1>}$
+
+If you wish, you could try to invent a new versions of these units if you want, but the GRU is a standard one, is just commonly used. Although you can imagine that researchers have tried other versions that are similar but not exactly the same as what I'm writing down here as well.
+
+The other common version is called an LSTM, which stands for Long Short-term Memory, which we'll talk about in the next video.
+
+But GRUs and LSTMs are two specific instantiations of this set of ideas that are most commonly used.
+
+Just one note on notation. I tried to define a consistent notation to make these ideas easier to understand. If you look at the academic literature, sometimes you'll see people use an alternative notation, there would be H tilde there, U, R and H to refer to these quantities as well. They try to use a more consistent notation between GRUs and LSTMs as well as using a more consistent notation, Gamma to refer to the gains to hopefully make these ideas easier to understand.
+
+![alt text](_assets/FullGRU.png)
+
+### Summary
+Traditional RNNs have two big problems:
+
+1. They forget long-term information
+* Example Andrew gave:
+* In a sentence, the subject may appear early.
+* You need to remember whether it was singular or plural until the verb appears.
+
+Vanilla RNNs quickly “overwrite” this info.
+
+2. Vanishing gradient problem
+* While training, gradients shrink exponentially over time steps.
+* This makes it nearly impossible for the network to learn long-range dependencies.
+
+-> GRUs solve both with gating mechanisms.
+
+The GRU introduces:
+* A memory cell: $c^{<t>}$
+* A gate controlling how much memory is updated
+
+In GRUs, the output equals the memory, unlike LSTMs (which have separate memory and output):
+
+$a^{<t>} = c^{<t>}$
+
+This makes the architecture simpler than LSTM but still powerful.
+
+1. Update Gate — $\Gamma_u$​
+
+This gate determines:
+
+Should we keep the old memory or replace it?
+
+Its value is between 0 and 1:
+* If 1 → update completely
+* If 0 → keep old memory
+
+Mathematically:
+
+$\Gamma_u = \sigma(W_u[c^{<t-1>},x^{<t>}]+b_u)$
+
+2. Candidate Memory — $\tilde{c}^{<t>}$
+
+This is the new memory we might use based on:
+* the previous hidden state $a^{<t-1>}$
+* the current input $x^t$
+
+$\tilde{c}^{<t>} = tanh(W_c[\Gamma_r*c^{<t-1>},x^{<t>}]+b_c)$
+
+3. Final Memory Update
+
+This is the core of the GRU:
+
+$c^{<t>} = \Gamma_u * \tilde{c}^{<t>} + (1-\Gamma_u)*c^{<t-1>}$
+
+* When $\Gamma_u \approx 1$, update memory → use new info $\tilde{c}$
+* When $\Gamma_u \approx 0$, keep old memory → ignore new info
+
+This is how the GRU avoids overwriting useful long-term information.
+
+Suppose you want to remember “subject is plural” over 30 words.
+
+GRU can simply set: $\Gamma_u$=0
+
+For many time steps → memory is preserved:
+
+$c^{<t>}=c^{<t-1>}$
+
+The gradient flows easily because:
+* No repeated multiplication by small numbers
+* Memory is copied with no decay
+
+This fixes the vanishing gradient problem.
+
+Sentence:
+
+“The dogs, who were running in the park near the lake,... are playing.”
+
+The GRU learns:
+* At "dogs" → store plural in memory
+* During long relative clause → keep memory (Γ_u ≈ 0)
+* At "are" → use stored memory to choose correct verb form
+* Later → may reset memory (Γ_u ≈ 1)
+
+This is exactly what vanilla RNNs fail at.
+
+## Long Short Term Memory (LSTM)
+### GRU and LSTM
+
 
 
 
