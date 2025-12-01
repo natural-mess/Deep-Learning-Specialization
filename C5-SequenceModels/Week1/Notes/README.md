@@ -19,6 +19,47 @@ Discover recurrent neural networks, a type of model that performs extremely well
 * Generate your own jazz music with deep learning
 * Apply an LSTM to a music generation task
 
+- [Week 1: Recurrent Neural Networks](#week-1-recurrent-neural-networks)
+  - [Why Sequence Models?](#why-sequence-models)
+  - [Notation](#notation)
+    - [Motivating example](#motivating-example)
+    - [Representing words](#representing-words)
+  - [Recurrent Neural Network Model](#recurrent-neural-network-model)
+    - [Why not a standard network?](#why-not-a-standard-network)
+    - [Recurrent Neural Networks](#recurrent-neural-networks)
+    - [Forward Propagation](#forward-propagation)
+    - [Simplified RNN notation](#simplified-rnn-notation)
+    - [Backpropagation Through Time](#backpropagation-through-time)
+  - [Different Types of RNNs](#different-types-of-rnns)
+    - [Examples of RNN architectures](#examples-of-rnn-architectures)
+    - [Summary of RNN types](#summary-of-rnn-types)
+  - [Language Model and Sequence Generation](#language-model-and-sequence-generation)
+    - [What is language modelling?](#what-is-language-modelling)
+    - [Language modelling with an RNN](#language-modelling-with-an-rnn)
+    - [RNN model](#rnn-model)
+  - [Sampling Novel Sequences](#sampling-novel-sequences)
+    - [Sampling a sequence from a trained RNN](#sampling-a-sequence-from-a-trained-rnn)
+    - [Character-level language model](#character-level-language-model)
+    - [Sequence generation](#sequence-generation)
+  - [Vanishing Gradients with RNNs](#vanishing-gradients-with-rnns)
+    - [Vanishing gradients with RNNs](#vanishing-gradients-with-rnns-1)
+  - [Gated Recurrent Unit (GRU)](#gated-recurrent-unit-gru)
+    - [RNN unit](#rnn-unit)
+    - [GRU (simplified)](#gru-simplified)
+    - [Full GRU](#full-gru)
+    - [Summary](#summary)
+  - [Long Short Term Memory (LSTM)](#long-short-term-memory-lstm)
+    - [GRU and LSTM](#gru-and-lstm)
+    - [LSTM units](#lstm-units)
+    - [LSTM in pictures](#lstm-in-pictures)
+  - [Bidirectional RNN](#bidirectional-rnn)
+    - [Getting information from the future](#getting-information-from-the-future)
+    - [Bidirectional RNN (BRNN)](#bidirectional-rnn-brnn)
+    - [Summary](#summary-1)
+  - [Deep RNNs](#deep-rnns)
+    - [Deep RNN example](#deep-rnn-example)
+
+
 ## Why Sequence Models?
 Examples of Sequence Models:
 * Speech recognition: you are given an input audio clip X and asked to map it to a text transcript Y.
@@ -1020,12 +1061,312 @@ The GRU learns:
 This is exactly what vanilla RNNs fail at.
 
 ## Long Short Term Memory (LSTM)
+In the last video, you learn about the GRU, the Gated Recurring Unit and how that can allow you to learn very long range connections in a sequence. The other type of unit that allows you to do this very well is the LSTM or the long short term memory units. And this is even more powerful than the GRU.
+
 ### GRU and LSTM
+Equations for GRU
 
+$\tilde{c}^{<t>} = tanh(W_c[\Gamma_r*c^{<t-1>},x^{<t>}]+b_c)$
 
+Update gate: $\Gamma_u = \sigma(W_u[c^{<t-1>},x^{<t>}]+b_u)$
 
+Relevant gate: $\Gamma_r = \sigma(W_r[c^{<t-1>},x^{<t>}]+b_r)$
 
+$c^{<t>} = \Gamma_u * \tilde{c}^{<t>} + (1-\Gamma_u)*c^{<t-1>}$
 
+$a^{<t>} = c^{<t>}$
+
+LSTM is more powerful and more genral version of GRU.
+
+Candiate to udpate $c^{<t>}$:
+
+$\tilde{c}^{<t>} = tanh(W_c[a^{<t-1>},x^{<t>}]+b_c)$
+
+In LSTM, we no longer have the case that $a^{<t>} = c^{<t>}$. We don't use $\Gamma_r$ in this equation.
+
+Update gate is same as GRU:
+
+$\Gamma_u = \sigma(W_u[a^{<t-1>},x^{<t>}]+b_u)$
+
+Notice that instead of having one update gate controls both of these terms, we're going to have two separate terms.
+
+So instead of $\Gamma_r$ and 1 - $\Gamma_r$, we are going to have $\Gamma_r$ here and forget gate we should call $\Gamma_f$.
+
+$\Gamma_f = \sigma(W_f[a^{<t-1>},x^{<t>}]+b_f)$
+
+Then we're going to have a new output gate
+
+$\Gamma_o = \sigma(W_o[a^{<t-1>},x^{<t>}]+b_o)$
+
+And then the update value to the memory cell will be
+
+$c^{<t>} = \Gamma_u * \tilde{c}^{<t>} + \Gamma_f*c^{<t-1>}$
+
+This gives the memory cell the option of keeping the old value $c^{<t-1>}$ and then just adding to it this new value $\tilde{c}^{<t>}$. So use a separate update and forget gates.
+
+Finally instead of $a^{<t>} = c^{<t>}$.
+
+$a^{<t>} = \Gamma_o*tanh c^{<t>}$
+
+These are the equations that govern the LSTM. And you can tell it has three gates instead of two. So it's a bit more complicated and places against in slightly different places.
+
+### LSTM units
+![alt text](_assets/LSTMUnits.png)
+
+### LSTM in pictures
+![alt text](_assets/LSTMPicture.png)
+
+The key things to take away from this picture or maybe that you use $a^{<t-1>}$ and $x^{<t>}$ to compute all the gate values. So in this picture you have $a^{<t-1>}$ and $x^{<t>}$ coming together to compute a forget gate to compute the update gates and the computer the output gate. And they also go through a tarnish to compute a $\tilde{c}^{<t>}$. 
+
+And then these values are combined in these complicated ways with element wise multiplies and so on to get a $c^{<t>}$ from the previous $c^{<t-1>}$.
+
+One element of this is interesting is if you hook up a bunch of these in parallel so that's one of them and you connect them, connect these temporarily. So there's the input $x^{<1>}$, then $x^{<2>}$, $x^{<3>}$. So you can take these units and just hook them up as follows where the output a for a period of timeset times input a at the next time set. And similarly for C and I've simplified the diagrams a little bit at the bottom.
+
+![alt text](_assets/LSTMPicture2.png)
+
+One cool thing about this, you notice is that this is a line at the top that shows how so long as you said the forget and the update gates, appropriately, it is relatively easy for the LSTM to have some value $c^{<0>}$ and have that be passed all the way to the right to have, maybe $c^{<3>}$ = $c^{<0>}$. And this is why the LSTM as well as the GRU is very good at memorizing certain values even for a long time for certain real values stored in the memory cells even for many, many times steps.
+
+As you can imagine, there are also a few variations on this that people use. Perhaps the most common one, is that instead of just having the gate values be dependent only on $a^{<t-1>}$ and $x^{<t>}$. Sometimes people also sneak in there the value $c^{<t-1>}$ as well. This is called a peephole connection. Not a great name maybe, but if you see peephole connection, what that means is that the gate values may depend not just on $a^{<t-1>}$ and on $x^{<t>}$ but also on the previous memory cell value. And the peephole connection can go into all three of these gates computations. 
+
+One technical detail is that these are say 100 dimensional vectors, if you have 100 dimensional hidden memory cell union. So is this and so say fifth element of $c^{<t-1>}$ affects only the fifth element of the correspondent gates. So that relationship is 1 to 1 where not every element of the 100 dimensional $c^{<t-1>}$ can affect all elements of the gates, but instead the first element of $c^{<t-1>}$ affects the first element of the gates. Second element affects second elements and so on.
+
+If you ever read the paper and see someone talk about the peephole connection, that's what they mean, that $c^{<t-1>}$ is used to affect the gate value as well. So that's it for the LSTM, when should you use a GRU and when should you use an LSTM. 
+
+When should you use a GRU and when should you use an LSTM. 
+There is a widespread consensus in this. And even though I presented GRUs first in the history of deep learning, LSTMs actually came much earlier and then GRUs were relatively recent invention that were maybe derived as partly a simplification of the more complicated LSTM model.
+
+Researchers have tried both of these models on many different problems and on different problems the different algorithms will win out. So there isn't a universally superior algorithm, which is why I want to show you both of them. But I feel like when I am using these, the advantage of the GRU is that it's a simpler model and so it's actually easier to build a much bigger network only has two gates, so computation runs a bit faster so it scales the building, somewhat bigger models. But the LSTM is more powerful and more flexible since there's three gates instead of two. 
+
+If you want to pick one to use, I think LSTM has been the historically more proven choice. So if you had to pick one, I think most people today will still use the LSTM as the default first thing to try. Although I think the last few years GRUs have been gaining a lot of momentum and I feel like more and more teams are also using GRUs because they're a bit simpler but often were, just as well and it might be easier to scale them to even bigger problems.
+
+## Bidirectional RNN
+By now you've seen most of the key building blocks of our RNN. But there are just two more ideas that let you build much more powerful models.
+* Bidirectional RNN, which lets you at the point in time to take information from both earlier and later in the sequence.
+* Deep RNN.
+
+### Getting information from the future
+Named entity recognition
+
+![alt text](_assets/NamedEntityRecognition.png)
+
+One of the problems of this network is that, to figure out whether the third word "Teddy" is a part of a person's name, it's not enough to just look at the first part of the sentence. So to tell if $y^{<3>}$ should be 0 or 1, you need more information than just the first few words.
+
+Because the first three words doesn't tell you if they're talking about "Teddy bears", or talk about the former US President, "Teddy Roosevelt".
+
+This is a unidirectional or forward directional only RNN.
+
+This comment I just made is true whether these cells ($a^{<1>}$ to $a^{<7>}$) are standard RNN blocks, or whether there are GRU units, or whether they're LSTM blocks.
+
+All these blocks are in a forward only direction.
+
+What a bidirection RNN does or a BRNN is to fix this issue.
+
+![alt text](_assets/ForwardOnlyDirection.png)
+
+### Bidirectional RNN (BRNN)
+A birectional RNN works as follows.
+
+I'm going to simplify to use a simplified four inputs, 4 words sentence. So we have four inputs, $x^{<1>}$ through $x^{<4>}$. 
+
+This network's hidden there will have a forward recurring components. So I'm going to call this $a^{<1>}$ to $a^{<4>}$.
+
+I'm going to draw a right arrow over that to denote the four recurrent component and so to connect them as follows.
+
+![alt text](_assets/BRNN1.png)
+
+Each of these four recurrent units input the current X and then feed in to help predict $\hat{y}^{<1>}$ to $\hat{y}^{<4>}$.
+
+![alt text](_assets/BRNN2.png)
+
+So far I haven't done anything. Basically, we draw on the RNN from the previous slide, but with the arrows place in slightly funny positions.
+
+I drew the arrows in these slightly funny positions because what we're going to do is add a backward recurrent there. That would have $a^{<1>}$, left arrow to denote this is a backward connection, and then $a^{<2>}$ backwards, $a^{<3>}$ backwards, and $a^{<4>}$ backwards.
+
+The left arrow denotes it is a backward connection.
+
+![alt text](_assets/BRNN3.png)
+
+And so we're then going to connect the network up as follows.
+
+![alt text](_assets/BRNN4.png)
+
+These a backward connections will be connected to each other, going backwards in time.
+
+![alt text](_assets/BRNN5.png)
+
+Notice that this network defines a cyclic draft. 
+
+Given an input sequence $x^{<1>}$ to $x^{<4>}$, the forward sequence we first compute a forward (1), then use that to compute a forward (2), then a forward (3), then a forward (4).
+
+Whereas the backward sequence will start by computing a backward 4 and then go back and compute a backward 3.
+
+Notice you re computing network activations. This is not backprop, this is forwardprop but the forwardprop goals has part of the computation going from left to right and part of the computation going from right to left in this diagram. By having computed a backward 3. You can then use those activations completely backward 2, and then a backward 1. And then finally, you haven't computed all your hidden layers of the activations, you can then make your predictions.
+
+For example, to make the predictions, your network would have something like $\hat{y}^{<t>}$ is an activation function apply to Wy with both the forward activation at time T. And the backward activation at time T being fed in, to make that prediction at time T.
+
+$\hat{y}^{<t>} = g(W_y[\overrightarrow{a}^{<t>}, \overleftarrow{a}^{<t>}]+b_y)$
+
+If you look at the prediction at times set 3 for example, then information from $x^{<1>}$ can flow through here forward one to forward 2, that also takes an information here, to forward 3, so $\hat{y}^{<3>}$. So information from $x^{<1>}$ to $x^{<3>}$ are all taking account with information from $x^{<4>}$ can flow through a backward 4 to a backward 3 to $\hat{y}^{<3>}$.
+
+This allows the production at time 3 to take his input both information from the past, as well as information from the present, which goes into both the forward and backward things at this step, as well as information from the future.
+
+In particular, given a phrase like "he said Teddy Roosevelt...", to predict whether Teddy was part of a person's name, you give to take into account information from the past and from the future. 
+
+![alt text](_assets/BRNN6.png)
+
+This is the bidirectional recurrent neural network. And these blocks here can be not just the standard RNN blocks, but they can also be GRU blocks, or LSTM blocks.
+
+In fact, for a lot of NLP problems, for a lot of text or natural language processing problems, a bidirectional RNN with a LSTM appears to be commonly used. So, if you have an NLP problem, and you have a complete sentence, you're trying to label things in the sentence, a bidirectional RNN with LSTM blocks forward then backward would be a pretty reasonable first thing to try.
+
+This is a modification they can make to the basic RNN architecture, or the GRU, or the LSTM. And by making this change, you can have a model that uses RNN, or GRU, LSTM, and is able to make predictions anywhere even in the middle of the sequence, but take into account information potentially from the entire sequence.
+
+The disadvantage of the bidirectional RNN is that, you do need the entire sequence of data before you can make predictions anywhere.
+
+For example, if you're building a speech recognition system then BRNN will let you take into account the entire speech at the end but if you use this straightforward implementation, you need to wait for the person to stop talking to get the entire utterance before you can actually process it, and make a speech recognition prediction. So the real time speech recognition applications, there is somewhat more complex models as well rather than just using the standard by the rational RNN as you're seeing here. But for a lot of natural language processing applications where you can get the entire sentence all at the same time, the standard BRNN algorithm is actually very effective. So that's it for BRNN in the Nixon final video for this week. 
+
+### Summary
+A normal (unidirectional) RNN processes a sequence left → right:
+
+$x^{<1>}$ -> $x^{<2>}$ -> $x^{<3>}$
+
+This means:
+* Each prediction $y^{<t>}$ only uses past information
+* But many tasks require knowing both past and future.
+
+For example — Named Entity Recognition:
+
+Sentence:
+
+“I live in New York City.”
+
+To know whether “New” is part of a city name, you need to see:
+
+Past words: "in"
+
+Future words: "York City"
+
+A unidirectional RNN can only see the past.
+
+A BRNN is simply:
+* One RNN moving forward: $\overrightarrow{a}^{<t>}=f(\overrightarrow{a}^{<t-1>},x^{<t>})$
+* One RNN moving backward: $\overleftarrow{a}^{<t>}=f(\overleftarrow{a}^{<t+1>},x^{<t>})$
+
+At each time step, the output depends on both:
+
+$\hat{y}^{<t>} = g(W_y[\overrightarrow{a}^{<t>}, \overleftarrow{a}^{<t>}]+b_y)$
+
+So the network sees:
+* Everything before t
+* Everything after y
+
+Task: Label each word as a Person, City, or Other
+
+Sentence:
+
+“I visited Paris last year.”
+
+To label “Paris” as a city, the model benefits from:
+* Past: “visited”
+* Future: “last year”
+
+A BRNN can see both.
+
+A unidirectional RNN cannot use “last year” because it hasn’t seen it yet.
+
+Why BRNNs Work Well
+
+They use full context
+
+Great for:
+* Named Entity Recognition
+* Part-of-Speech tagging
+* Machine translation
+* Sentiment analysis
+* Speech recognition (offline)
+
+They can understand ambiguous words
+
+Example:
+
+“He will record the video.” → verb
+
+“I bought a record.” → noun
+
+The network needs the word after to decide.
+
+BRNNs solve this naturally.
+
+A BRNN cannot make predictions until it has all inputs.
+
+This is why:
+
+Not suitable for:
+* Realtime speech recognition
+* Online prediction
+* Streaming data
+
+Suitable for:
+
+Tasks where the whole sequence is provided first
+(documents, sentences, audio files, medical sequences)
+
+* RNN looks only backward
+* BRNN looks backward and forward
+* Two RNNs are trained jointly
+* Outputs are combined
+* This gives significantly improved accuracy for sequence labeling tasks
+
+A Bidirectional RNN processes sequences in both directions—one RNN goes forward and the other goes backward. This allows the model to use both past and future information when making predictions at each time step. BRNNs significantly improve performance on tasks like named entity recognition, where understanding a word often requires both previous and upcoming context. However, BRNNs need the entire sequence before predicting, so they cannot be used for real-time tasks.
+
+## Deep RNNs
+The different versions of RNNs you've seen so far will already work quite well by themselves. But for learning very complex functions sometimes is useful to stack multiple layers of RNNs together to build even deeper versions of these models. In this video, you'll see how to build these deeper RNNs.
+
+### Deep RNN example
+You remember for a standard neural network, you will have an input X. And then that's stacked to some hidden layer and so that might have activations of say, $a^{[1]}$ for the first hidden layer, and then that's stacked to the next layer with activations $a^{[3]}$, then maybe another layer, activations $a^{[3]}$ and then you make a prediction ŷ.
+
+![alt text](_assets/StandardNN.png)
+
+A deep RNN is a bit like this, by taking this network that I just drew by hand and unrolling that in time.
+
+![alt text](_assets/StandardRNN_Modif.png)
+
+Here's the standard RNN that you've seen so far. But I've changed the notation a little bit which is that, instead of writing this as $a^{<0>}$ for the activation time 0, I've added this square bracket 1 to denote that this is for layer 1.
+
+The notation we're going to use is $a^{[l]}$ to denote that it's an activation associated with layer l and then <t> to denote that that's associated over time t $a^{[l]<t>}$.
+
+![alt text](_assets/RNNLayers.png)
+
+Then we can just stack these things on top and so this will be a new network with 3 hidden layers.
+
+![alt text](_assets/RNN3layers.png)
+
+Let's look at an example of how this value is computed.
+
+So $a^{[2]<3>}$ has two inputs. It has the input coming from the bottom, and there's the input coming from the left.
+
+It's computed as an activation function g applied to a weight matrix. This is going to be Wa because computing an a quantity, an activation quantity. And for the second layer, and so I'm going to give this a^{[2]<2>}$, that thing, comma a^{[1]<3>}$, there's that thing, plus ba associated to the second layer.
+
+$a^{[2]<3>}= g(W_a^{[2]}[a^{[2]<2>},a^{[1]<3>}]+b_a^{[2]})$
+
+That's how you get that activation value.
+
+The same parameters $W_a^{[2]}$ and $b_a^{[2]}$ are used for every one of these computations at this layer. Whereas, in contrast, the first layer would have its own parameters $W_a^{[1]}$ and $b_a^{[1]}$.
+
+![alt text](_assets/DeepRNNActivation.png)
+
+So whereas for standard RNNs like the one on the left, you know we've seen neural networks that are very, very deep, maybe over 100 layers.
+
+For RNNs, having 3 layers is already quite a lot. Because of the temporal dimension, these networks can already get quite big even if you have just a small handful of layers. And you don't usually see these stacked up to be like 100 layers.
+
+One thing you do see sometimes is that you have recurrent layers that are stacked on top of each other. But then you might take the output $y^{<1>}$, let's get rid of this, and then just have a bunch of deep layers that are not connected horizontally but have a deep network here that then finally predicts $y^{<1>}$. And you can have the same deep network here that predicts $y^{<2>}$. So this is a type of network architecture that we're seeing a little bit more where you have 3 recurrent units that connected in time, followed by a network, followed by a network after that, as we seen for $y^{<3>}$ and $y^{<4>}$.
+
+![alt text](_assets/DeepRNNExample.png)
+
+There's a deep network, but that does not have the horizontal connections. So that's one type of architecture we seem to be seeing more of.
+
+Quite often, these blocks don't just have to be standard RNN, the simple RNN model. They can also be GRU blocks LSTM blocks. And finally, you can also build deep versions of the bidirectional RNN.
+
+Because deep RNNs are quite computationally expensive to train, there's often a large temporal extent already, though you just don't see as many deep recurrent layers. This has, I guess, 3 deep recurrent layers that are connected in time. You don't see as many deep recurrent layers as you would see in a number of layers in a deep conventional neural network.
 
 
 
