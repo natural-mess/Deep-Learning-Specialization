@@ -632,7 +632,7 @@ $\ell = \Sigma_t \ell^{<t>}(\hat{y}^{<t>},y^{<t>})$
 
 If you train this RNN on a large training set, what it will be able to do is, given any initial set of words such as "cats average 15" or "cats average 15 hours of", it can predict what is the chance of the next word.
 
-Given a new sentence, say $y^{<1>}$, $y^{<2>}$, $y^{<3>}$, with just three words for simplicity, the way you can figure out what is the chance of this entire sentence would be, well, the first Softmax tells you what's the chance of $y^{<1>}$, that would be this first output. Then the second one can tell you what's the chance of p of $y^{<2>}$ given $y^{<1>}$. Then the third one tells you what's the chance of $y^{<3>}$ given $y^{<1>}$ and $y^{<3>}$, and so it's by multiplying out these three probabilities.
+Given a new sentence, say $y^{<1>}$, $y^{<2>}$, $y^{<3>}$, with just three words for simplicity, the way you can figure out what is the chance of this entire sentence would be, well, the first Softmax tells you what's the chance of $y^{<1>}$, that would be this first output. Then the second one can tell you what's the chance of p of $y^{<2>}$ given $y^{<1>}$. Then the third one tells you what's the chance of $y^{<3>}$ given $y^{<1>}$ and $y^{<2>}$, and so it's by multiplying out these three probabilities.
 
 $P(y^{<1>},y^{<2>},y^{<3>})=P(y^{<1>})P(y^{<2>}|y^{<1>})P(y^{<3>}|y^{<1>},y^{<2>})$
 
