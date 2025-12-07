@@ -86,3 +86,10 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Notes](./C5-SequenceModels/Week1/Notes/)
 * [Quiz](./C5-SequenceModels/Week1/Quiz/)
 * [Assignments](./C5-SequenceModels/Week1/Assignments/)
+
+### Week 2: Natural Language Processing & Word Embeddings
+* [Slides](./C5-SequenceModels/Week2/Slides/)
+* [Notes](./C5-SequenceModels/Week2/Notes/)
+* [Quiz](./C5-SequenceModels/Week2/Quiz/)
+* [Assignments](./C5-SequenceModels/Week2/Assignments/)
+
