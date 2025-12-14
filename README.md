@@ -93,3 +93,8 @@ Deep Learning Specialization from Cousera, taught by Andrew Ng
 * [Quiz](./C5-SequenceModels/Week2/Quiz/)
 * [Assignments](./C5-SequenceModels/Week2/Assignments/)
 
+### Week 3: Sequence Models & Attention Mechanism
+* [Slides](./C5-SequenceModels/Week3/Slides/)
+* [Notes](./C5-SequenceModels/Week3/Notes/)
+* [Quiz](./C5-SequenceModels/Week3/Quiz/)
+* [Assignments](./C5-SequenceModels/Week3/Assignments/)
