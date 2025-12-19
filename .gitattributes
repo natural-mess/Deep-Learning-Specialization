@@ -6,3 +6,5 @@
 glove.6B.50d.txt filter=lfs diff=lfs merge=lfs -text
 X.npy filter=lfs diff=lfs merge=lfs -text
 X_dev.npy filter=lfs diff=lfs merge=lfs -text
+glove.6B.100d.txt filter=lfs diff=lfs merge=lfs -text
+*.bin filter=lfs diff=lfs merge=lfs -text
